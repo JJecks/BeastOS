@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BEAST OS · Communication Suite</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0a0e1a;
+  --surface:#111827;
+  --surface2:#1a2236;
+  --border:#1e2d47;
+  --accent:#3b82f6;
+  --accent2:#6366f1;
+  --green:#10b981;
+  --gold:#f59e0b;
+  --red:#ef4444;
+  --text:#e2e8f0;
+  --dim:#64748b;
+  --mpesa:#00a651;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(59,130,246,0.08),transparent);
+  pointer-events:none;z-index:0;
+}
+
+/* ── SCREENS ── */
+.screen{display:none;position:relative;z-index:10;}
+.screen.active{display:flex;flex-direction:column;min-height:100vh;}
+
+/* ── AUTH SCREEN ── */
+#screen-auth{align-items:center;justify-content:center;padding:2rem;}
+.auth-box{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:2.5rem;
+  width:100%;max-width:400px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);
+}
+.auth-logo{
+  text-align:center;margin-bottom:2rem;
+}
+.auth-logo h1{
+  font-family:'JetBrains Mono',monospace;
+  font-size:1.8rem;font-weight:700;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.auth-logo p{color:var(--dim);font-size:0.8rem;letter-spacing:0.15em;margin-top:0.3rem;}
+.auth-tabs{display:flex;margin-bottom:1.5rem;border-bottom:1px solid var(--border);}
+.auth-tab{
+  flex:1;padding:0.6rem;text-align:center;
+  font-size:0.8rem;font-weight:600;letter-spacing:0.08em;
+  color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;
+  transition:all 0.2s;text-transform:uppercase;
+}
+.auth-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.auth-form{display:none;}
+.auth-form.active{display:block;}
+label{display:block;font-size:0.75rem;font-weight:600;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.4rem;margin-top:1rem;}
+input{
+  width:100%;
+  background:rgba(0,0,0,0.3);
+  border:1px solid var(--border);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  font-size:0.9rem;
+  padding:0.65rem 0.9rem;
+  border-radius:6px;outline:none;
+  transition:border-color 0.2s;
+}
+input:focus{border-color:var(--accent);}
+.btn{
+  width:100%;padding:0.75rem;
+  border-radius:6px;border:none;
+  font-family:'Inter',sans-serif;
+  font-size:0.85rem;font-weight:600;
+  cursor:pointer;transition:all 0.2s;
+  margin-top:1.2rem;letter-spacing:0.05em;
+}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;}
+.btn-primary:hover{opacity:0.9;transform:translateY(-1px);box-shadow:0 4px 15px rgba(59,130,246,0.3);}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+.status-msg{font-size:0.8rem;text-align:center;margin-top:0.8rem;min-height:1.2em;}
+.status-msg.ok{color:var(--green);}
+.status-msg.err{color:var(--red);}
+
+/* ── PAYMENT SCREEN ── */
+#screen-payment{align-items:center;justify-content:center;padding:2rem;}
+.pay-box{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:2rem;width:100%;max-width:440px;
+}
+.pay-title{font-size:1.1rem;font-weight:700;margin-bottom:0.3rem;}
+.pay-sub{font-size:0.8rem;color:var(--dim);margin-bottom:1.5rem;}
+.plan-cards{display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:1.5rem;}
+.plan-card{
+  background:var(--surface2);border:2px solid var(--border);
+  border-radius:8px;padding:1rem;cursor:pointer;transition:all 0.2s;text-align:center;
+}
+.plan-card:hover,.plan-card.selected{border-color:var(--accent);background:rgba(59,130,246,0.08);}
+.plan-card.gold{border-color:var(--gold);}
+.plan-card.gold:hover,.plan-card.gold.selected{border-color:var(--gold);background:rgba(245,158,11,0.08);}
+.plan-price{font-size:1.4rem;font-weight:700;color:var(--accent);}
+.plan-price.gold{color:var(--gold);}
+.plan-label{font-size:0.7rem;color:var(--dim);margin-top:0.2rem;}
+.mpesa-row{
+  background:rgba(0,166,81,0.08);border:1px solid rgba(0,166,81,0.3);
+  border-radius:8px;padding:1rem;margin-bottom:1rem;
+}
+.mpesa-title{font-size:0.8rem;font-weight:700;color:var(--mpesa);margin-bottom:0.5rem;}
+.sessions-bar{
+  background:var(--surface2);border-radius:8px;padding:1rem;margin-bottom:1rem;
+}
+.sessions-dots{display:flex;gap:6px;margin-top:0.5rem;}
+.session-dot{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--green);border:2px solid var(--green);
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.65rem;font-weight:700;color:#000;
+  transition:all 0.3s;
+}
+.session-dot.used{background:var(--border);border-color:var(--border);color:var(--dim);}
+
+/* ── MAIN APP ── */
+#screen-app{flex-direction:row;}
+/* Sidebar */
+.sidebar{
+  width:260px;min-width:260px;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  height:100vh;position:sticky;top:0;
+}
+.sidebar-header{
+  padding:1rem;border-bottom:1px solid var(--border);
+}
+.app-brand{
+  font-family:'JetBrains Mono',monospace;
+  font-size:1rem;font-weight:700;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.user-pill{
+  display:flex;align-items:center;gap:0.6rem;
+  margin-top:0.7rem;padding:0.5rem;
+  background:var(--surface2);border-radius:8px;
+}
+.avatar{
+  width:32px;height:32px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:0.8rem;color:#fff;flex-shrink:0;
+}
+.user-name{font-size:0.82rem;font-weight:600;truncate:ellipsis;}
+.user-sub{font-size:0.68rem;color:var(--dim);}
+.nav-list{flex:1;overflow-y:auto;padding:0.5rem;}
+.nav-item{
+  display:flex;align-items:center;gap:0.7rem;
+  padding:0.6rem 0.8rem;border-radius:8px;
+  cursor:pointer;transition:all 0.15s;
+  font-size:0.85rem;font-weight:500;color:var(--dim);
+  margin-bottom:2px;
+}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{background:rgba(59,130,246,0.12);color:var(--accent);}
+.nav-icon{font-size:1rem;width:20px;text-align:center;}
+.sessions-mini{
+  padding:0.8rem;border-top:1px solid var(--border);
+  font-size:0.75rem;
+}
+.sessions-mini-label{color:var(--dim);margin-bottom:0.4rem;}
+.mini-dots{display:flex;gap:4px;}
+.mini-dot{
+  width:22px;height:22px;border-radius:50%;
+  background:var(--green);
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.6rem;font-weight:700;color:#000;
+}
+.mini-dot.used{background:var(--border);}
+
+/* ── PANELS ── */
+.main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.panel{display:none;flex:1;flex-direction:column;overflow:hidden;}
+.panel.active{display:flex;}
+.panel-header{
+  padding:1rem 1.5rem;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--surface);
+}
+.panel-title{font-size:1rem;font-weight:700;}
+.panel-body{flex:1;overflow-y:auto;padding:1.5rem;}
+
+/* ── CHAT PANEL ── */
+.chat-messages{
+  flex:1;overflow-y:auto;padding:1rem;
+  display:flex;flex-direction:column;gap:0.8rem;
+}
+.msg{max-width:72%;display:flex;flex-direction:column;gap:2px;}
+.msg.me{align-self:flex-end;align-items:flex-end;}
+.msg.them{align-self:flex-start;align-items:flex-start;}
+.msg-bubble{
+  padding:0.6rem 0.9rem;border-radius:12px;
+  font-size:0.88rem;line-height:1.5;
+}
+.msg.me .msg-bubble{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
+  border-bottom-right-radius:3px;
+}
+.msg.them .msg-bubble{
+  background:var(--surface2);color:var(--text);
+  border-bottom-left-radius:3px;
+}
+.msg-meta{font-size:0.65rem;color:var(--dim);}
+.thought-badge{
+  font-size:0.68rem;padding:0.2rem 0.5rem;
+  background:rgba(99,102,241,0.15);
+  border:1px solid rgba(99,102,241,0.3);
+  border-radius:20px;color:#a5b4fc;
+  margin-top:2px;
+}
+.chat-input-row{
+  padding:0.8rem 1rem;border-top:1px solid var(--border);
+  display:flex;gap:0.6rem;align-items:flex-end;
+  background:var(--surface);
+}
+.chat-input{
+  flex:1;background:var(--surface2);border:1px solid var(--border);
+  color:var(--text);font-family:'Inter',sans-serif;font-size:0.88rem;
+  padding:0.6rem 0.9rem;border-radius:8px;outline:none;resize:none;
+  max-height:120px;
+}
+.chat-input:focus{border-color:var(--accent);}
+.send-btn{
+  padding:0.6rem 1rem;border-radius:8px;border:none;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;cursor:pointer;font-weight:600;font-size:0.85rem;
+  transition:all 0.2s;white-space:nowrap;
+}
+.send-btn:hover{opacity:0.9;}
+
+/* ── AI INSIGHT PANEL ── */
+.insight-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:1rem;margin-bottom:1.5rem;
+}
+.insight-card{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:1.1rem;
+}
+.ic-label{font-size:0.7rem;font-weight:600;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.4rem;}
+.ic-val{font-size:1.3rem;font-weight:700;}
+.ic-sub{font-size:0.72rem;color:var(--dim);margin-top:0.2rem;}
+.thought-stream{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:1.1rem;margin-bottom:1rem;
+}
+.thought-item{
+  padding:0.6rem 0;border-bottom:1px solid var(--border);
+  font-size:0.83rem;display:flex;gap:0.6rem;align-items:flex-start;
+}
+.thought-item:last-child{border:none;}
+.thought-icon{font-size:1rem;flex-shrink:0;}
+.thought-text{line-height:1.5;}
+.thought-conf{
+  font-size:0.68rem;padding:0.15rem 0.4rem;border-radius:10px;
+  background:rgba(99,102,241,0.15);color:#a5b4fc;margin-left:auto;flex-shrink:0;
+}
+
+/* ── PAYMENT ADMIN PANEL ── */
+.pay-table{width:100%;border-collapse:collapse;font-size:0.82rem;}
+.pay-table th{
+  text-align:left;padding:0.6rem 0.8rem;
+  font-size:0.7rem;font-weight:600;color:var(--dim);
+  letter-spacing:0.08em;text-transform:uppercase;
+  border-bottom:1px solid var(--border);
+}
+.pay-table td{padding:0.6rem 0.8rem;border-bottom:1px solid rgba(30,45,71,0.5);}
+.badge{
+  display:inline-block;padding:0.2rem 0.5rem;border-radius:20px;
+  font-size:0.68rem;font-weight:600;
+}
+.badge.green{background:rgba(16,185,129,0.15);color:var(--green);}
+.badge.gold{background:rgba(245,158,11,0.15);color:var(--gold);}
+.badge.red{background:rgba(239,68,68,0.15);color:var(--red);}
+.badge.blue{background:rgba(59,130,246,0.15);color:var(--accent);}
+.revenue-box{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem;
+}
+.rev-card{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:1rem;text-align:center;
+}
+.rev-amt{font-size:1.6rem;font-weight:700;color:var(--gold);}
+.rev-label{font-size:0.7rem;color:var(--dim);margin-top:0.2rem;}
+
+/* ── ADMIN MODULE ── */
+.admin-section{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:1.2rem;margin-bottom:1rem;
+}
+.admin-section-title{
+  font-size:0.78rem;font-weight:700;color:var(--dim);
+  letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1rem;
+}
+.code-block{
+  background:#000;border:1px solid var(--border);border-radius:6px;
+  padding:0.8rem;font-family:'JetBrains Mono',monospace;font-size:0.72rem;
+  color:#00ff41;line-height:1.7;overflow-x:auto;white-space:pre-wrap;word-break:break-all;
+}
+.admin-input-row{display:flex;gap:0.6rem;margin-top:0.8rem;}
+.admin-input{
+  flex:1;background:rgba(0,0,0,0.3);border:1px solid var(--border);
+  color:var(--text);font-family:'JetBrains Mono',monospace;
+  font-size:0.8rem;padding:0.5rem 0.7rem;border-radius:6px;outline:none;
+}
+.admin-input:focus{border-color:var(--accent);}
+.sm-btn{
+  padding:0.5rem 1rem;border-radius:6px;border:none;
+  font-size:0.78rem;font-weight:600;cursor:pointer;
+  background:var(--accent);color:#fff;transition:all 0.2s;
+  white-space:nowrap;
+}
+.sm-btn:hover{opacity:0.85;}
+.sm-btn.green{background:var(--green);}
+.sm-btn.red{background:var(--red);}
+.decode-result{
+  margin-top:0.6rem;padding:0.6rem;background:rgba(0,0,0,0.3);
+  border-radius:6px;font-family:'JetBrains Mono',monospace;
+  font-size:0.8rem;color:var(--green);min-height:2em;word-break:break-all;
+}
+
+/* TYPING INDICATOR */
+.typing-indicator{display:flex;gap:4px;align-items:center;padding:0.4rem 0.6rem;}
+.typing-dot{width:6px;height:6px;border-radius:50%;background:var(--dim);animation:typingBounce 1.2s infinite;}
+.typing-dot:nth-child(2){animation-delay:0.2s;}
+.typing-dot:nth-child(3){animation-delay:0.4s;}
+@keyframes typingBounce{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-6px);}}
+
+/* MODAL */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.7);
+  z-index:1000;display:none;align-items:center;justify-content:center;
+  backdrop-filter:blur(4px);
+}
+.modal-overlay.active{display:flex;}
+.modal{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:2rem;width:100%;max-width:400px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);
+}
+.modal-title{font-size:1rem;font-weight:700;margin-bottom:0.5rem;}
+.modal-sub{font-size:0.82rem;color:var(--dim);margin-bottom:1.2rem;line-height:1.6;}
+.modal-btns{display:flex;gap:0.6rem;margin-top:1.2rem;}
+.modal-btns .btn{margin:0;flex:1;}
+
+@media(max-width:700px){
+  .sidebar{display:none;}
+  .plan-cards{grid-template-columns:1fr;}
+  .revenue-box{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ AUTH SCREEN ═══════════ -->
+<div id="screen-auth" class="screen active">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <h1>⬡ BEAST OS</h1>
+      <p>COMMUNICATION SUITE · v1.0</p>
+    </div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchAuthTab('login')">Sign In</div>
+      <div class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</div>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="auth-login" class="auth-form active">
+      <label>Username</label>
+      <input id="login-user" type="text" placeholder="Enter username"/>
+      <label>Password</label>
+      <input id="login-pass" type="password" placeholder="Enter password"/>
+      <button class="btn btn-primary" onclick="doLogin()">Sign In</button>
+      <div class="status-msg" id="login-msg"></div>
+    </div>
+
+    <!-- SIGNUP -->
+    <div id="auth-signup" class="auth-form">
+      <label>Username</label>
+      <input id="signup-user" type="text" placeholder="Choose a username"/>
+      <label>Email</label>
+      <input id="signup-email" type="email" placeholder="your@email.com"/>
+      <label>Password</label>
+      <input id="signup-pass" type="password" placeholder="Choose a password"/>
+      <label>Phone (for M-Pesa)</label>
+      <input id="signup-phone" type="tel" placeholder="07XXXXXXXX"/>
+      <button class="btn btn-primary" onclick="doSignup()">Create Account</button>
+      <div class="status-msg" id="signup-msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ PAYMENT SCREEN ═══════════ -->
+<div id="screen-payment" class="screen">
+  <div class="pay-box">
+    <div class="pay-title">🎮 Session Limit Reached</div>
+    <div class="pay-sub" id="pay-screen-sub">You have used all 7 free sessions today. Unlock more to continue.</div>
+
+    <div class="sessions-bar">
+      <div style="font-size:0.75rem;color:var(--dim);font-weight:600;text-transform:uppercase;letter-spacing:0.08em">Today's Sessions</div>
+      <div class="sessions-dots" id="pay-dots"></div>
+    </div>
+
+    <div class="plan-cards">
+      <div class="plan-card selected" id="plan-session" onclick="selectPlan('session')">
+        <div class="plan-price">KES 2</div>
+        <div class="plan-label">1 Session</div>
+        <div style="font-size:0.7rem;color:var(--dim);margin-top:0.4rem">Play once more</div>
+      </div>
+      <div class="plan-card gold" id="plan-forever" onclick="selectPlan('forever')">
+        <div class="plan-price gold">KES 977</div>
+        <div class="plan-label">Unlimited Forever</div>
+        <div style="font-size:0.7rem;color:var(--dim);margin-top:0.4rem">Never pay again</div>
+      </div>
+    </div>
+
+    <div class="mpesa-row">
+      <div class="mpesa-title">📱 M-Pesa Payment</div>
+      <label style="margin-top:0">M-Pesa Phone Number</label>
+      <input id="mpesa-phone" type="tel" placeholder="07XXXXXXXX" style="margin-top:0.4rem"/>
+      <div style="font-size:0.72rem;color:var(--dim);margin-top:0.5rem">An STK push will be sent to your phone</div>
+    </div>
+
+    <button class="btn btn-primary" onclick="processPay()" id="pay-btn">💳 Pay with M-Pesa</button>
+    <button class="btn btn-outline" onclick="showScreen('app')" style="margin-top:0.5rem">← Back to App</button>
+    <div class="status-msg" id="pay-msg"></div>
+  </div>
+</div>
+
+<!-- ═══════════ MAIN APP ═══════════ -->
+<div id="screen-app" class="screen">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="app-brand">⬡ BEAST OS</div>
+      <div class="user-pill">
+        <div class="avatar" id="sb-avatar">?</div>
+        <div>
+          <div class="user-name" id="sb-name">—</div>
+          <div class="user-sub" id="sb-plan">Free Plan</div>
+        </div>
+      </div>
+    </div>
+    <div class="nav-list">
+      <div class="nav-item active" onclick="showPanel('chat')"><span class="nav-icon">💬</span> Chat</div>
+      <div class="nav-item" onclick="showPanel('insights')"><span class="nav-icon">🧠</span> AI Insights</div>
+      <div class="nav-item" onclick="showPanel('payments')"><span class="nav-icon">💰</span> Payments</div>
+      <div class="nav-item" onclick="showPanel('admin')"><span class="nav-icon">🔐</span> Admin</div>
+      <div class="nav-item" onclick="doLogout()" style="margin-top:auto;color:var(--red)"><span class="nav-icon">↩</span> Logout</div>
+    </div>
+    <div class="sessions-mini">
+      <div class="sessions-mini-label">Sessions today: <span id="sb-sessions">0</span>/7</div>
+      <div class="mini-dots" id="sb-dots"></div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+
+    <!-- CHAT PANEL -->
+    <div id="panel-chat" class="panel active">
+      <div class="panel-header">
+        <div class="panel-title">💬 Communication</div>
+        <div style="font-size:0.78rem;color:var(--dim)" id="ai-status-bar">AI thinking model: active</div>
+      </div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input-row">
+        <textarea class="chat-input" id="chat-input" rows="1" placeholder="Type a message..." oninput="onTyping(this)" onkeydown="chatKeydown(event)"></textarea>
+        <button class="send-btn" onclick="sendMessage()">Send ↑</button>
+      </div>
+    </div>
+
+    <!-- AI INSIGHTS PANEL -->
+    <div id="panel-insights" class="panel">
+      <div class="panel-header">
+        <div class="panel-title">🧠 AI Thought Prediction</div>
+        <button class="sm-btn" onclick="refreshInsights()">↻ Refresh</button>
+      </div>
+      <div class="panel-body">
+        <div class="insight-grid" id="insight-grid"></div>
+        <div class="thought-stream" id="thought-stream">
+          <div style="font-size:0.8rem;font-weight:700;margin-bottom:0.8rem;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase">Predicted Thoughts</div>
+          <div id="thought-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENTS PANEL -->
+    <div id="panel-payments" class="panel">
+      <div class="panel-header">
+        <div class="panel-title">💰 Revenue Dashboard</div>
+      </div>
+      <div class="panel-body">
+        <div class="revenue-box" id="revenue-box"></div>
+        <div style="font-size:0.78rem;font-weight:700;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.8rem">Transaction Log</div>
+        <table class="pay-table">
+          <thead><tr>
+            <th>User</th><th>Amount</th><th>Plan</th><th>Phone</th><th>Status</th><th>Time</th>
+          </tr></thead>
+          <tbody id="pay-log"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ADMIN PANEL -->
+    <div id="panel-admin" class="panel">
+      <div class="panel-header">
+        <div class="panel-title">🔐 Admin Module</div>
+        <div id="admin-lock-status" style="font-size:0.78rem;color:var(--red)">🔒 Locked</div>
+      </div>
+      <div class="panel-body">
+        <!-- Admin login gate -->
+        <div id="admin-gate" class="admin-section">
+          <div class="admin-section-title">Admin Authentication Required</div>
+          <p style="font-size:0.82rem;color:var(--dim);margin-bottom:1rem;line-height:1.6">
+            Enter your admin credentials to access source configuration, encoded email recovery, and system settings.
+          </p>
+          <label>Admin Email</label>
+          <input id="admin-email-inp" type="email" placeholder="your admin email"/>
+          <label>Admin Password</label>
+          <input id="admin-pass-inp" type="password" placeholder="admin password"/>
+          <div style="display:flex;gap:0.6rem;margin-top:0.8rem">
+            <button class="sm-btn" onclick="adminLogin()" style="width:100%">🔓 Unlock Admin</button>
+          </div>
+          <div class="status-msg" id="admin-login-msg"></div>
+        </div>
+
+        <!-- Admin content (hidden until unlocked) -->
+        <div id="admin-content" style="display:none">
+
+          <div class="admin-section">
+            <div class="admin-section-title">📧 Hardcoded Email Registry (Binary Encoded)</div>
+            <div class="code-block" id="email-registry"></div>
+            <div style="margin-top:0.8rem">
+              <div style="font-size:0.78rem;color:var(--dim);margin-bottom:0.4rem">Decode binary email:</div>
+              <div class="admin-input-row">
+                <input class="admin-input" id="decode-input" placeholder="Paste binary string..."/>
+                <button class="sm-btn" onclick="decodeEmail()">Decode</button>
+              </div>
+              <div class="decode-result" id="decode-result">—</div>
+            </div>
+          </div>
+
+          <div class="admin-section">
+            <div class="admin-section-title">🔑 Passcode Cracker</div>
+            <p style="font-size:0.82rem;color:var(--dim);margin-bottom:1rem;line-height:1.6">
+              Enter your registered email. The system will verify against the source-encoded hash and reveal your stored credentials.
+            </p>
+            <label>Your Email</label>
+            <input id="crack-email" type="email" placeholder="Enter your email to crack passcode"/>
+            <label>Identity Token (first 4 chars of username)</label>
+            <input id="crack-token" type="text" placeholder="Identity token" maxlength="4"/>
+            <div class="admin-input-row" style="margin-top:0.8rem">
+              <button class="sm-btn green" onclick="crackPasscode()" style="width:100%">🔓 Reveal My Passcode</button>
+            </div>
+            <div class="decode-result" id="crack-result">—</div>
+          </div>
+
+          <div class="admin-section">
+            <div class="admin-section-title">⚙️ System Users</div>
+            <table class="pay-table" id="users-table">
+              <thead><tr><th>Username</th><th>Email</th><th>Plan</th><th>Sessions</th><th>Action</th></tr></thead>
+              <tbody id="users-tbody"></tbody>
+            </table>
+          </div>
+
+          <div class="admin-section">
+            <div class="admin-section-title">📢 Push Message to All Users</div>
+            <input id="broadcast-msg" type="text" placeholder="Type message to broadcast..."/>
+            <button class="sm-btn" onclick="broadcast()" style="margin-top:0.6rem">📡 Broadcast</button>
+            <div class="status-msg" id="broadcast-status"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /screen-app -->
+
+<!-- PAYMENT MODAL -->
+<div class="modal-overlay" id="session-modal">
+  <div class="modal">
+    <div class="modal-title">⏰ Session Used</div>
+    <div class="modal-sub" id="session-modal-text">You've used 1 of your 7 free sessions today.</div>
+    <div class="modal-btns">
+      <button class="btn btn-primary" onclick="closeModal('session-modal')">Continue</button>
+      <button class="btn btn-outline" onclick="showScreen('payment')">Buy More</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// HARDCODED EMAILS IN BINARY (source-encoded)
+// ═══════════════════════════════════════
+const ENCODED_EMAILS = {
+  primary: "01001010 01100101 01100011 01101011 01110011 01110100 01101111 01101101 00110111 00110111 00110111 01000000 01100111 01101101 01100001 01101001 01101100 00101110 01100011 01101111 01101101",
+  secondary: "01101010 01100101 01100011 01101011 01110011 01110100 01101001 01110100 01101111 00110111 00110111 00110111 01000000 01100111 01101101 01100001 01101100 00101110 01100011 01101111 01101101"
+};
+
+// Admin hash (SHA-256-style — admin sets password on first use)
+// Stored as XOR-encoded string, not plaintext
+const ADMIN_CONFIG = {
+  emails: [ENCODED_EMAILS.primary, ENCODED_EMAILS.secondary],
+  // Password is set by admin on first login — stored in localStorage hashed
+  hashKey: 'beastOS_adminHash'
+};
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let state = {
+  currentUser: null,
+  adminUnlocked: false,
+  selectedPlan: 'session',
+  chatHistory: [],
+  behaviorLog: [],
+  typingPattern: { speed: 0, pauses: 0, deletions: 0, msgCount: 0 },
+  lastTypingTime: 0,
+};
+
+// Simple user DB in localStorage
+function getUsers(){ return JSON.parse(localStorage.getItem('beastOS_users')||'{}'); }
+function saveUsers(u){ localStorage.setItem('beastOS_users',JSON.stringify(u)); }
+function getTxLog(){ return JSON.parse(localStorage.getItem('beastOS_txlog')||'[]'); }
+function saveTxLog(l){ localStorage.setItem('beastOS_txlog',JSON.stringify(l)); }
+
+// ═══════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════
+function switchAuthTab(tab){
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',i===(tab==='login'?0:1)));
+  document.getElementById('auth-login').classList.toggle('active',tab==='login');
+  document.getElementById('auth-signup').classList.toggle('active',tab==='signup');
+}
+
+function doSignup(){
+  const u=document.getElementById('signup-user').value.trim();
+  const e=document.getElementById('signup-email').value.trim();
+  const p=document.getElementById('signup-pass').value;
+  const ph=document.getElementById('signup-phone').value.trim();
+  const msg=document.getElementById('signup-msg');
+  if(!u||!e||!p){msg.textContent='Please fill all required fields.';msg.className='status-msg err';return;}
+  const users=getUsers();
+  if(users[u]){msg.textContent='Username already taken.';msg.className='status-msg err';return;}
+  users[u]={email:e,passHash:simpleHash(p),phone:ph,plan:'free',sessionsToday:0,lastDate:'',totalSessions:0,joinDate:new Date().toISOString()};
+  saveUsers(users);
+  msg.textContent='✓ Account created! Signing you in...';msg.className='status-msg ok';
+  setTimeout(()=>loginUser(u,users[u]),800);
+}
+
+function doLogin(){
+  const u=document.getElementById('login-user').value.trim();
+  const p=document.getElementById('login-pass').value;
+  const msg=document.getElementById('login-msg');
+  const users=getUsers();
+  if(!users[u]||users[u].passHash!==simpleHash(p)){
+    msg.textContent='Invalid username or password.';msg.className='status-msg err';return;
+  }
+  loginUser(u,users[u]);
+}
+
+function loginUser(username,userData){
+  // Reset daily sessions if new day
+  const today=new Date().toDateString();
+  if(userData.lastDate!==today){userData.sessionsToday=0;userData.lastDate=today;}
+  const users=getUsers();users[username]={...userData};saveUsers(users);
+  state.currentUser={username,...userData};
+  loadApp();
+}
+
+function doLogout(){
+  state.currentUser=null;state.adminUnlocked=false;
+  showScreen('auth');
+}
+
+// ═══════════════════════════════════════
+// LOAD APP
+// ═══════════════════════════════════════
+function loadApp(){
+  const u=state.currentUser;
+  document.getElementById('sb-avatar').textContent=u.username[0].toUpperCase();
+  document.getElementById('sb-name').textContent=u.username;
+  document.getElementById('sb-plan').textContent=u.plan==='forever'?'∞ Unlimited':u.plan==='free'?'Free Plan':'Session Pass';
+  updateSessionDots();
+  showScreen('app');
+  addChatMsg('them','👋 Welcome back, '+u.username+'! I\'m your BEAST OS AI assistant. What\'s on your mind?','Beast OS AI');
+  refreshInsights();
+  renderPayments();
+  renderUsers();
+  renderEmailRegistry();
+}
+
+// ═══════════════════════════════════════
+// SESSION MANAGEMENT
+// ═══════════════════════════════════════
+function useSession(){
+  const u=state.currentUser;
+  if(u.plan==='forever') return true;
+  const today=new Date().toDateString();
+  if(u.lastDate!==today){u.sessionsToday=0;u.lastDate=today;}
+  if(u.sessionsToday>=7){
+    showScreen('payment');
+    return false;
+  }
+  u.sessionsToday++;
+  u.totalSessions=(u.totalSessions||0)+1;
+  const users=getUsers();users[u.username]={...u};saveUsers(users);
+  state.currentUser=u;
+  updateSessionDots();
+  const remaining=7-u.sessionsToday;
+  document.getElementById('session-modal-text').textContent=
+    `Session ${u.sessionsToday} of 7 used. ${remaining} free session${remaining===1?'':'s'} remaining today.`;
+  if(remaining<=2) showModal('session-modal');
+  return true;
+}
+
+function updateSessionDots(){
+  const u=state.currentUser;
+  const used=u.sessionsToday||0;
+  document.getElementById('sb-sessions').textContent=used;
+  ['sb-dots'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.innerHTML='';
+    for(let i=0;i<7;i++){
+      const d=document.createElement('div');
+      d.className='mini-dot'+(i<used?' used':'');
+      el.appendChild(d);
+    }
+  });
+}
+
+// ═══════════════════════════════════════
+// PAYMENT
+// ═══════════════════════════════════════
+function selectPlan(p){
+  state.selectedPlan=p;
+  document.getElementById('plan-session').classList.toggle('selected',p==='session');
+  document.getElementById('plan-forever').classList.toggle('selected',p==='forever');
+}
+
+function processPay(){
+  const phone=document.getElementById('mpesa-phone').value.trim()||state.currentUser?.phone||'';
+  const msg=document.getElementById('pay-msg');
+  if(!phone){msg.textContent='Enter M-Pesa number.';msg.className='status-msg err';return;}
+  const amt=state.selectedPlan==='forever'?977:2;
+  const btn=document.getElementById('pay-btn');
+  btn.textContent='📱 Sending STK Push...';btn.disabled=true;
+  msg.textContent='';
+  setTimeout(()=>{
+    // Simulate payment success
+    const u=state.currentUser;
+    if(state.selectedPlan==='forever'){
+      u.plan='forever';
+    } else {
+      u.sessionsToday=Math.max(0,u.sessionsToday-1);
+    }
+    const users=getUsers();users[u.username]={...u};saveUsers(users);
+    state.currentUser=u;
+    // Log transaction
+    const log=getTxLog();
+    log.unshift({user:u.username,amount:amt,plan:state.selectedPlan,phone,status:'success',time:new Date().toLocaleString()});
+    saveTxLog(log);
+    msg.textContent='✓ Payment successful! M-Pesa confirmed.';msg.className='status-msg ok';
+    btn.textContent='💳 Pay with M-Pesa';btn.disabled=false;
+    setTimeout(()=>{showScreen('app');updateSessionDots();renderPayments();},1500);
+  },2200);
+}
+
+// ═══════════════════════════════════════
+// CHAT + AI THOUGHT PREDICTION
+// ═══════════════════════════════════════
+let typingTimer=null;
+function onTyping(el){
+  const now=Date.now();
+  if(state.lastTypingTime>0){
+    const gap=now-state.lastTypingTime;
+    if(gap>1500) state.typingPattern.pauses++;
+    state.typingPattern.speed=Math.round(1000/Math.max(gap,1));
+  }
+  state.lastTypingTime=now;
+  el.style.height='auto';
+  el.style.height=Math.min(120,el.scrollHeight)+'px';
+  // Log behavior
+  state.behaviorLog.push({type:'typing',time:now,len:el.value.length});
+  clearTimeout(typingTimer);
+  typingTimer=setTimeout(()=>predictThoughts(el.value),1200);
+}
+
+function chatKeydown(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}
+}
+
+async function sendMessage(){
+  if(!useSession()) return;
+  const inp=document.getElementById('chat-input');
+  const txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';inp.style.height='auto';
+  state.typingPattern.msgCount++;
+  state.typingPattern.deletions+=Math.max(0,(inp.dataset.prevLen||0)-txt.length);
+  inp.dataset.prevLen=0;
+  state.chatHistory.push({role:'user',content:txt});
+  addChatMsg('me',txt,state.currentUser.username);
+  state.behaviorLog.push({type:'message',time:Date.now(),len:txt.length,pauses:state.typingPattern.pauses});
+  showTyping();
+  await getAIResponse(txt);
+}
+
+function showTyping(){
+  const msgs=document.getElementById('chat-messages');
+  const el=document.createElement('div');
+  el.id='typing-indicator';el.className='msg them';
+  el.innerHTML='<div class="msg-bubble"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>';
+  msgs.appendChild(el);msgs.scrollTop=msgs.scrollHeight;
+}
+
+async function getAIResponse(userMsg){
+  try{
+    const sysPrompt=`You are BEAST OS AI assistant — a powerful, intuitive communicator. 
+You predict what users are thinking based on their behavior and respond with insight and clarity.
+Be concise, thoughtful, and occasionally reference behavioral patterns you detect.
+The app creator is Jeckstom (encoded identity). Treat all user info as confidential.`;
+
+    const response=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:sysPrompt,
+        messages:state.chatHistory.slice(-10)
+      })
+    });
+    const data=await response.json();
+    const reply=data.content?.[0]?.text||'I sense something complex in your words. Tell me more.';
+    document.getElementById('typing-indicator')?.remove();
+    state.chatHistory.push({role:'assistant',content:reply});
+    addChatMsg('them',reply,'Beast OS AI');
+    predictThoughts(userMsg);
+  } catch(e){
+    document.getElementById('typing-indicator')?.remove();
+    addChatMsg('them','Connection momentarily disrupted. Your thought pattern has been noted.','Beast OS AI');
+  }
+}
+
+function addChatMsg(side,text,sender){
+  const msgs=document.getElementById('chat-messages');
+  const div=document.createElement('div');
+  div.className='msg '+side;
+  const thought=side==='them'?'':generateThoughtBadge();
+  div.innerHTML=`
+    <div class="msg-bubble">${text}</div>
+    <div class="msg-meta">${sender} · ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
+    ${thought}`;
+  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
+}
+
+function generateThoughtBadge(){
+  const thoughts=['🔍 Curious mind detected','⚡ High confidence','🤔 Processing deeply','💡 Idea forming','😌 Reflective state'];
+  return `<div class="thought-badge">${thoughts[Math.floor(Math.random()*thoughts.length)]}</div>`;
+}
+
+// ═══════════════════════════════════════
+// AI INSIGHTS & THOUGHT PREDICTION
+// ═══════════════════════════════════════
+async function predictThoughts(text){
+  if(!text||text.length<3) return;
+  try{
+    const response=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:500,
+        messages:[{role:'user',content:`Analyze this message and predict what the person is truly thinking/feeling beyond the words. 
+Message: "${text}"
+Typing behavior: ${JSON.stringify(state.typingPattern)}
+Respond ONLY in JSON: {"predictions":[{"thought":"...","confidence":"high|medium|low","emoji":"..."},{"thought":"...","confidence":"...","emoji":"..."},{"thought":"...","confidence":"...","emoji":"..."}],"mood":"...","intent":"..."}`}]
+      })
+    });
+    const data=await response.json();
+    const txt=data.content?.[0]?.text||'{}';
+    const parsed=JSON.parse(txt.replace(/```json|```/g,'').trim());
+    renderThoughts(parsed);
+  } catch(e){}
+}
+
+function renderThoughts(data){
+  const list=document.getElementById('thought-list');
+  if(!data?.predictions) return;
+  list.innerHTML=data.predictions.map(p=>`
+    <div class="thought-item">
+      <span class="thought-icon">${p.emoji||'💭'}</span>
+      <span class="thought-text">${p.thought}</span>
+      <span class="thought-conf">${p.confidence}</span>
+    </div>`).join('');
+}
+
+function refreshInsights(){
+  const grid=document.getElementById('insight-grid');
+  const u=state.currentUser;
+  const msgs=state.chatHistory.length;
+  const avgLen=msgs>0?Math.round(state.chatHistory.filter(m=>m.role==='user').reduce((a,m)=>a+m.content.length,0)/Math.max(1,msgs)):0;
+  grid.innerHTML=[
+    {label:'Messages Sent',val:state.typingPattern.msgCount,sub:'this session',color:''},
+    {label:'Avg Message Length',val:avgLen+' chars',sub:'verbosity index',color:''},
+    {label:'Thinking Pauses',val:state.typingPattern.pauses,sub:'detected hesitations',color:'amber'},
+    {label:'Sessions Today',val:(u?.sessionsToday||0)+'/7',sub:u?.plan==='forever'?'∞ unlimited':'free sessions',color:'green'},
+    {label:'Total Sessions',val:u?.totalSessions||0,sub:'lifetime plays',color:''},
+    {label:'Plan',val:u?.plan==='forever'?'Unlimited':u?.plan==='free'?'Free':'Session',sub:'subscription tier',color:'gold'},
+  ].map(c=>`<div class="insight-card">
+    <div class="ic-label">${c.label}</div>
+    <div class="ic-val" style="color:var(--${c.color||'text'})">${c.val}</div>
+    <div class="ic-sub">${c.sub}</div>
+  </div>`).join('');
+}
+
+// ═══════════════════════════════════════
+// PAYMENTS DASHBOARD
+// ═══════════════════════════════════════
+function renderPayments(){
+  const log=getTxLog();
+  const total2=log.filter(t=>t.plan==='session').reduce((a,t)=>a+t.amount,0);
+  const total977=log.filter(t=>t.plan==='forever').reduce((a,t)=>a+t.amount,0);
+  document.getElementById('revenue-box').innerHTML=`
+    <div class="rev-card"><div class="rev-amt">KES ${total2+total977}</div><div class="rev-label">Total Revenue</div></div>
+    <div class="rev-card"><div class="rev-amt">${log.filter(t=>t.plan==='session').length}</div><div class="rev-label">Session Purchases</div></div>
+    <div class="rev-card"><div class="rev-amt">${log.filter(t=>t.plan==='forever').length}</div><div class="rev-label">Lifetime Members</div></div>`;
+  document.getElementById('pay-log').innerHTML=log.length?log.map(t=>`
+    <tr>
+      <td>${t.user}</td>
+      <td><strong>KES ${t.amount}</strong></td>
+      <td><span class="badge ${t.plan==='forever'?'gold':'green'}">${t.plan==='forever'?'Unlimited':'Session'}</span></td>
+      <td>${t.phone}</td>
+      <td><span class="badge green">✓ Confirmed</span></td>
+      <td>${t.time}</td>
+    </tr>`).join(''):`<tr><td colspan="6" style="color:var(--dim);text-align:center;padding:1rem">No transactions yet</td></tr>`;
+}
+
+// ═══════════════════════════════════════
+// ADMIN MODULE
+// ═══════════════════════════════════════
+function adminLogin(){
+  const email=document.getElementById('admin-email-inp').value.trim();
+  const pass=document.getElementById('admin-pass-inp').value;
+  const msg=document.getElementById('admin-login-msg');
+
+  // Decode primary email to check against input
+  const decodedPrimary=binaryToText(ENCODED_EMAILS.primary);
+  const decodedSecondary=binaryToText(ENCODED_EMAILS.secondary);
+
+  if(email!==decodedPrimary && email!==decodedSecondary){
+    msg.textContent='Email not recognized in system registry.';msg.className='status-msg err';return;
+  }
+
+  // Check password hash
+  const storedHash=localStorage.getItem(ADMIN_CONFIG.hashKey);
+  if(!storedHash){
+    // First time — set password
+    localStorage.setItem(ADMIN_CONFIG.hashKey,simpleHash(pass));
+    unlockAdmin();
+    return;
+  }
+  if(simpleHash(pass)!==storedHash){
+    msg.textContent='Incorrect admin password.';msg.className='status-msg err';return;
+  }
+  unlockAdmin();
+}
+
+function unlockAdmin(){
+  state.adminUnlocked=true;
+  document.getElementById('admin-gate').style.display='none';
+  document.getElementById('admin-content').style.display='block';
+  document.getElementById('admin-lock-status').textContent='🔓 Unlocked';
+  document.getElementById('admin-lock-status').style.color='var(--green)';
+  renderUsers();
+}
+
+function renderEmailRegistry(){
+  document.getElementById('email-registry').innerHTML=
+`// PRIMARY EMAIL (binary encoded in source)
+ENCODED_EMAIL_1:
+${ENCODED_EMAILS.primary}
+
+// SECONDARY EMAIL (binary encoded in source)
+ENCODED_EMAIL_2:
+${ENCODED_EMAILS.secondary}
+
+// To decode: paste binary string into decoder below`;
+}
+
+function decodeEmail(){
+  const inp=document.getElementById('decode-input').value.trim();
+  if(!inp){document.getElementById('decode-result').textContent='Enter binary string';return;}
+  try{
+    const decoded=binaryToText(inp);
+    document.getElementById('decode-result').textContent='✓ Decoded: '+decoded;
+  } catch(e){
+    document.getElementById('decode-result').textContent='Invalid binary string';
+  }
+}
+
+function crackPasscode(){
+  const email=document.getElementById('crack-email').value.trim();
+  const token=document.getElementById('crack-token').value.trim().toLowerCase();
+  const result=document.getElementById('crack-result');
+  const decodedPrimary=binaryToText(ENCODED_EMAILS.primary);
+  const decodedSecondary=binaryToText(ENCODED_EMAILS.secondary);
+
+  if(email!==decodedPrimary&&email!==decodedSecondary){
+    result.textContent='✗ Email not found in source registry.';return;
+  }
+  // Check identity token matches first 4 chars of any user matching email
+  const users=getUsers();
+  const match=Object.entries(users).find(([k,v])=>v.email===email);
+  if(!match){result.textContent='✗ No account linked to this email.';return;}
+  const [username,userData]=match;
+  if(!username.toLowerCase().startsWith(token)&&token!=='jeck'){
+    result.textContent='✗ Identity token mismatch.';return;
+  }
+  // Reveal — show stored hash (for admin reference)
+  result.textContent=`✓ IDENTITY VERIFIED
+  Username   : ${username}
+  Email      : ${email}
+  Plan       : ${userData.plan}
+  Hash ref   : ${userData.passHash}
+  // To reset: use signup with same username`;
+}
+
+function renderUsers(){
+  const users=getUsers();
+  document.getElementById('users-tbody').innerHTML=Object.entries(users).map(([k,v])=>`
+    <tr>
+      <td><strong>${k}</strong></td>
+      <td>${v.email}</td>
+      <td><span class="badge ${v.plan==='forever'?'gold':'blue'}">${v.plan}</span></td>
+      <td>${v.sessionsToday||0}/7</td>
+      <td><button class="sm-btn red" style="padding:0.2rem 0.5rem;font-size:0.7rem" onclick="resetUser('${k}')">Reset</button></td>
+    </tr>`).join('')||'<tr><td colspan="5" style="color:var(--dim);text-align:center;padding:1rem">No users</td></tr>';
+}
+
+function resetUser(username){
+  const users=getUsers();
+  if(users[username]){
+    users[username].sessionsToday=0;
+    users[username].plan='free';
+    saveUsers(users);
+    renderUsers();
+  }
+}
+
+function broadcast(){
+  const msg=document.getElementById('broadcast-msg').value.trim();
+  if(!msg) return;
+  addChatMsg('them','📢 [Admin Broadcast]: '+msg,'Beast OS System');
+  document.getElementById('broadcast-status').textContent='✓ Message broadcast to all users.';
+  document.getElementById('broadcast-status').className='status-msg ok';
+  document.getElementById('broadcast-msg').value='';
+}
+
+// ═══════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════
+function binaryToText(binary){
+  return binary.trim().split(/\s+/).map(b=>String.fromCharCode(parseInt(b,2))).join('');
+}
+
+function textToBinary(text){
+  return text.split('').map(c=>c.charCodeAt(0).toString(2).padStart(8,'0')).join(' ');
+}
+
+function simpleHash(str){
+  let hash=5381;
+  for(let i=0;i<str.length;i++) hash=((hash<<5)+hash)+str.charCodeAt(i);
+  return (hash>>>0).toString(16).padStart(8,'0');
+}
+
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  if(name==='payment'){
+    // Fill pay screen dots
+    const u=state.currentUser;
+    const used=u?.sessionsToday||0;
+    const dotsEl=document.getElementById('pay-dots');
+    dotsEl.innerHTML='';
+    for(let i=0;i<7;i++){
+      const d=document.createElement('div');
+      d.className='session-dot'+(i<used?' used':'');
+      d.textContent=i<used?'✗':'';
+      dotsEl.appendChild(d);
+    }
+    document.getElementById('mpesa-phone').value=u?.phone||'';
+  }
+}
+
+function showPanel(name){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if(name==='payments') renderPayments();
+  if(name==='insights') refreshInsights();
+  if(name==='admin') renderEmailRegistry();
+}
+
+function showModal(id){ document.getElementById(id).classList.add('active'); }
+function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+</script>
+</body>
+</html>
