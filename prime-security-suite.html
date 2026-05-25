@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Prime Security Suite</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #020b12;
+    --panel: #040f1a;
+    --border: #0a3d5c;
+    --glow: #00f0ff;
+    --glow2: #00ff88;
+    --glow3: #ff6b35;
+    --text: #c8f0ff;
+    --dim: #3a7a9c;
+    --accent: #0af;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,240,255,0.015) 2px,
+      rgba(0,240,255,0.015) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Grid background */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,240,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,240,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  header {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    padding: 3rem 1rem 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(1.8rem, 5vw, 3.5rem);
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    color: var(--glow);
+    text-shadow: 0 0 20px var(--glow), 0 0 60px rgba(0,240,255,0.3);
+    animation: flicker 6s infinite;
+  }
+  header p {
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--dim);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    letter-spacing: 0.2em;
+  }
+
+  @keyframes flicker {
+    0%,95%,100% { opacity: 1; }
+    96% { opacity: 0.85; }
+    97% { opacity: 1; }
+    98% { opacity: 0.9; }
+  }
+
+  nav {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+  }
+  nav button {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    padding: 0.6rem 1.2rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--dim);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  nav button:hover, nav button.active {
+    border-color: var(--glow);
+    color: var(--glow);
+    box-shadow: 0 0 12px rgba(0,240,255,0.3), inset 0 0 12px rgba(0,240,255,0.05);
+  }
+
+  main {
+    position: relative;
+    z-index: 10;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  .tab { display: none; }
+  .tab.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+  }
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 40px; height: 2px;
+    background: var(--glow);
+    box-shadow: 0 0 8px var(--glow);
+  }
+  .panel-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--glow);
+    margin-bottom: 1.2rem;
+    text-transform: uppercase;
+  }
+
+  label {
+    display: block;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--dim);
+    letter-spacing: 0.1em;
+    margin-bottom: 0.4rem;
+    margin-top: 1rem;
+  }
+  label:first-of-type { margin-top: 0; }
+
+  input[type="text"], textarea, select {
+    width: 100%;
+    background: rgba(0,240,255,0.03);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    padding: 0.6rem 0.8rem;
+    outline: none;
+    border-radius: 0;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input[type="text"]:focus, textarea:focus {
+    border-color: var(--glow);
+    box-shadow: 0 0 8px rgba(0,240,255,0.2);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+
+  .btn {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    padding: 0.75rem 1.5rem;
+    border: 1px solid var(--glow);
+    background: rgba(0,240,255,0.08);
+    color: var(--glow);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    margin-top: 1rem;
+    margin-right: 0.5rem;
+  }
+  .btn:hover {
+    background: rgba(0,240,255,0.18);
+    box-shadow: 0 0 16px rgba(0,240,255,0.4);
+  }
+  .btn.green {
+    border-color: var(--glow2);
+    color: var(--glow2);
+    background: rgba(0,255,136,0.06);
+  }
+  .btn.green:hover { background: rgba(0,255,136,0.15); box-shadow: 0 0 16px rgba(0,255,136,0.3); }
+  .btn.orange {
+    border-color: var(--glow3);
+    color: var(--glow3);
+    background: rgba(255,107,53,0.06);
+  }
+  .btn.orange:hover { background: rgba(255,107,53,0.15); box-shadow: 0 0 16px rgba(255,107,53,0.3); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .output-box {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    padding: 1rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--glow2);
+    word-break: break-all;
+    line-height: 1.7;
+    margin-top: 1rem;
+    min-height: 60px;
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+  }
+  .output-box.dim { color: var(--dim); }
+  .output-box.orange { color: var(--glow3); }
+
+  .key-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  @media (max-width: 600px) { .key-grid { grid-template-columns: 1fr; } }
+
+  .key-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--dim);
+    margin-bottom: 0.3rem;
+    letter-spacing: 0.1em;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  .toggle-row span {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--dim);
+  }
+  .toggle {
+    position: relative;
+    width: 48px;
+    height: 24px;
+    cursor: pointer;
+  }
+  .toggle input { display: none; }
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    background: var(--border);
+    border: 1px solid var(--border);
+    transition: background 0.2s;
+  }
+  .toggle input:checked + .toggle-track { background: rgba(0,240,255,0.2); border-color: var(--glow); }
+  .toggle-thumb {
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 16px; height: 16px;
+    background: var(--dim);
+    transition: transform 0.2s, background 0.2s;
+  }
+  .toggle input:checked ~ .toggle-thumb { transform: translateX(24px); background: var(--glow); box-shadow: 0 0 6px var(--glow); }
+
+  .steps-box {
+    border: 1px solid rgba(0,240,255,0.1);
+    padding: 1rem;
+    margin-top: 1rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    line-height: 2;
+    display: none;
+  }
+  .steps-box.visible { display: block; animation: fadeIn 0.3s ease; }
+  .step-line { color: var(--dim); }
+  .step-line .val { color: var(--glow); }
+  .step-line .label { color: var(--glow3); }
+
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    margin: 0.5rem 0;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--glow), var(--glow2));
+    width: 0%;
+    transition: width 0.4s ease;
+    box-shadow: 0 0 6px var(--glow);
+  }
+
+  .status-line {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--dim);
+    margin-top: 0.5rem;
+    min-height: 1.2em;
+  }
+  .status-line.ok { color: var(--glow2); }
+  .status-line.err { color: #ff4444; }
+  .status-line.warn { color: var(--glow3); }
+
+  canvas { max-width: 100%; }
+
+  .viz-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+  @media (max-width: 700px) { .viz-grid { grid-template-columns: 1fr; } }
+
+  .sieve-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+    gap: 3px;
+    margin-top: 1rem;
+  }
+  .sieve-cell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    border: 1px solid var(--border);
+    color: var(--dim);
+    transition: all 0.3s;
+  }
+  .sieve-cell.prime {
+    background: rgba(0,240,255,0.1);
+    border-color: var(--glow);
+    color: var(--glow);
+    box-shadow: 0 0 6px rgba(0,240,255,0.2);
+  }
+  .sieve-cell.composite {
+    background: rgba(255,0,0,0.05);
+    border-color: rgba(255,0,0,0.2);
+    color: rgba(255,80,80,0.4);
+    text-decoration: line-through;
+  }
+  .sieve-cell.current {
+    background: rgba(255,107,53,0.2);
+    border-color: var(--glow3);
+    color: var(--glow3);
+  }
+
+  .radio-group {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+  }
+  .radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    margin-top: 0;
+    color: var(--text);
+    font-size: 0.8rem;
+  }
+  .radio-group input { width: auto; }
+
+  .copy-btn {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    padding: 0.25rem 0.6rem;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--dim);
+    cursor: pointer;
+    float: right;
+    transition: all 0.2s;
+    margin-left: 0.5rem;
+  }
+  .copy-btn:hover { border-color: var(--glow); color: var(--glow); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⬡ PRIME SECURITY SUITE</h1>
+  <p>// RSA ENCRYPTION ENGINE · PRIME VISUALIZATION · 512-BIT KEYS</p>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('keygen')">01 · KEY GEN</button>
+  <button onclick="showTab('encrypt')">02 · ENCRYPT</button>
+  <button onclick="showTab('decrypt')">03 · DECRYPT</button>
+  <button onclick="showTab('visualizer')">04 · VISUALIZER</button>
+</nav>
+
+<main>
+
+<!-- TAB 1: KEY GENERATION -->
+<div id="tab-keygen" class="tab active">
+  <div class="panel">
+    <div class="panel-title">// Prime Source</div>
+    <div class="radio-group">
+      <label><input type="radio" name="prime-source" value="auto" checked onchange="togglePrimeInput()"> Auto-Generate</label>
+      <label><input type="radio" name="prime-source" value="manual" onchange="togglePrimeInput()"> Manual Input</label>
+    </div>
+
+    <div id="manual-inputs" style="display:none">
+      <label>PRIME P (large prime, hex or decimal)</label>
+      <input type="text" id="prime-p" placeholder="Enter a prime number..."/>
+      <label>PRIME Q (large prime, different from P)</label>
+      <input type="text" id="prime-q" placeholder="Enter a prime number..."/>
+    </div>
+
+    <div id="auto-note" style="margin-top:1rem">
+      <span class="status-line">Probabilistic primality testing via Miller-Rabin (512-bit)</span>
+    </div>
+
+    <button class="btn" onclick="generateKeys()">⚙ GENERATE KEYS</button>
+    <div class="progress-bar"><div class="progress-fill" id="keygen-progress"></div></div>
+    <div class="status-line" id="keygen-status">READY</div>
+  </div>
+
+  <div class="panel" id="keys-panel" style="display:none">
+    <div class="panel-title">// Generated Key Pair</div>
+    <div class="key-grid">
+      <div>
+        <div class="key-label">PUBLIC KEY (e, n)</div>
+        <div class="output-box" id="pub-key-display">—</div>
+        <button class="copy-btn" onclick="copyText('pub-key-display')">COPY</button>
+      </div>
+      <div>
+        <div class="key-label">PRIVATE KEY (d, n)</div>
+        <div class="output-box orange" id="priv-key-display">—</div>
+        <button class="copy-btn" onclick="copyText('priv-key-display')">COPY</button>
+      </div>
+    </div>
+    <div class="key-grid" style="margin-top:1rem">
+      <div>
+        <div class="key-label">MODULUS n = p × q</div>
+        <div class="output-box dim" id="modulus-display">—</div>
+      </div>
+      <div>
+        <div class="key-label">φ(n) = (p-1)(q-1)</div>
+        <div class="output-box dim" id="phi-display">—</div>
+      </div>
+    </div>
+    <div class="toggle-row">
+      <span>EDUCATIONAL MODE</span>
+      <label class="toggle">
+        <input type="checkbox" id="edu-toggle-keygen" onchange="toggleEduKeygen()">
+        <div class="toggle-track"></div>
+        <div class="toggle-thumb"></div>
+      </label>
+    </div>
+    <div class="steps-box" id="keygen-steps"></div>
+  </div>
+</div>
+
+<!-- TAB 2: ENCRYPT -->
+<div id="tab-encrypt" class="tab">
+  <div class="panel">
+    <div class="panel-title">// RSA Encryption</div>
+    <label>PUBLIC KEY e</label>
+    <input type="text" id="enc-e" placeholder="Public exponent e (from Key Gen)"/>
+    <label>MODULUS n</label>
+    <input type="text" id="enc-n" placeholder="Modulus n (from Key Gen)"/>
+    <label>PLAINTEXT MESSAGE</label>
+    <textarea id="plaintext" placeholder="Enter message to encrypt..."></textarea>
+
+    <div class="toggle-row">
+      <span>SHOW MATH STEPS</span>
+      <label class="toggle">
+        <input type="checkbox" id="edu-toggle-enc">
+        <div class="toggle-track"></div>
+        <div class="toggle-thumb"></div>
+      </label>
+    </div>
+
+    <button class="btn green" onclick="encryptMessage()">⟶ ENCRYPT</button>
+    <div class="progress-bar"><div class="progress-fill" id="enc-progress"></div></div>
+    <div class="status-line" id="enc-status">READY</div>
+
+    <div class="key-label" style="margin-top:1rem">CIPHERTEXT (hex)</div>
+    <div class="output-box" id="ciphertext-display">—</div>
+    <button class="copy-btn" onclick="copyText('ciphertext-display')">COPY</button>
+
+    <div class="steps-box" id="enc-steps"></div>
+  </div>
+</div>
+
+<!-- TAB 3: DECRYPT -->
+<div id="tab-decrypt" class="tab">
+  <div class="panel">
+    <div class="panel-title">// RSA Decryption</div>
+    <label>PRIVATE KEY d</label>
+    <input type="text" id="dec-d" placeholder="Private exponent d (from Key Gen)"/>
+    <label>MODULUS n</label>
+    <input type="text" id="dec-n" placeholder="Modulus n (from Key Gen)"/>
+    <label>CIPHERTEXT (hex)</label>
+    <textarea id="ciphertext-input" placeholder="Paste ciphertext here..."></textarea>
+
+    <div class="toggle-row">
+      <span>SHOW MATH STEPS</span>
+      <label class="toggle">
+        <input type="checkbox" id="edu-toggle-dec">
+        <div class="toggle-track"></div>
+        <div class="toggle-thumb"></div>
+      </label>
+    </div>
+
+    <button class="btn orange" onclick="decryptMessage()">⟵ DECRYPT</button>
+    <div class="progress-bar"><div class="progress-fill" id="dec-progress"></div></div>
+    <div class="status-line" id="dec-status">READY</div>
+
+    <div class="key-label" style="margin-top:1rem">DECRYPTED MESSAGE</div>
+    <div class="output-box" id="decrypted-display">—</div>
+
+    <div class="steps-box" id="dec-steps"></div>
+  </div>
+</div>
+
+<!-- TAB 4: VISUALIZER -->
+<div id="tab-visualizer" class="tab">
+
+  <!-- Sieve of Eratosthenes -->
+  <div class="panel">
+    <div class="panel-title">// Sieve of Eratosthenes</div>
+    <label>SIEVE LIMIT (max 200)</label>
+    <input type="text" id="sieve-limit" value="100" style="width:120px;display:inline-block"/>
+    <button class="btn" style="margin-top:0;margin-left:0.5rem" onclick="runSieve()">RUN SIEVE</button>
+    <div class="status-line" id="sieve-status">Enter limit and run sieve</div>
+    <div class="sieve-grid" id="sieve-grid"></div>
+  </div>
+
+  <div class="viz-grid">
+    <!-- Riemann Zeta Zeros -->
+    <div class="panel">
+      <div class="panel-title">// Riemann Zeta Zeros (Im axis)</div>
+      <div class="status-line" style="margin-bottom:0.5rem">Known non-trivial zeros at Re=½</div>
+      <canvas id="zeta-chart" height="300"></canvas>
+    </div>
+
+    <!-- Prime Gap Distribution -->
+    <div class="panel">
+      <div class="panel-title">// Prime Gap Distribution</div>
+      <div class="status-line" style="margin-bottom:0.5rem">Gaps between consecutive primes ≤ 1000</div>
+      <canvas id="gap-chart" height="300"></canvas>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// =====================
+// BigInt RSA Engine
+// =====================
+
+// Miller-Rabin primality test
+function millerRabin(n, k = 20) {
+  if (n < 2n) return false;
+  if (n === 2n || n === 3n) return true;
+  if (n % 2n === 0n) return false;
+  let r = 0n, d = n - 1n;
+  while (d % 2n === 0n) { d /= 2n; r++; }
+  outer: for (let i = 0; i < k; i++) {
+    const a = randomBigInt(2n, n - 2n);
+    let x = modPow(a, d, n);
+    if (x === 1n || x === n - 1n) continue;
+    for (let j = 0n; j < r - 1n; j++) {
+      x = modPow(x, 2n, n);
+      if (x === n - 1n) continue outer;
+    }
+    return false;
+  }
+  return true;
+}
+
+function modPow(base, exp, mod) {
+  let result = 1n;
+  base = base % mod;
+  while (exp > 0n) {
+    if (exp % 2n === 1n) result = (result * base) % mod;
+    exp = exp / 2n;
+    base = (base * base) % mod;
+  }
+  return result;
+}
+
+function gcd(a, b) {
+  while (b) { [a, b] = [b, a % b]; }
+  return a;
+}
+
+function modInverse(e, phi) {
+  let [old_r, r] = [e, phi];
+  let [old_s, s] = [1n, 0n];
+  while (r !== 0n) {
+    const q = old_r / r;
+    [old_r, r] = [r, old_r - q * r];
+    [old_s, s] = [s, old_s - q * s];
+  }
+  if (old_s < 0n) old_s += phi;
+  return old_s;
+}
+
+function randomBigInt(min, max) {
+  const range = max - min + 1n;
+  const bits = range.toString(2).length;
+  const bytes = Math.ceil(bits / 8);
+  let result;
+  do {
+    const arr = new Uint8Array(bytes);
+    crypto.getRandomValues(arr);
+    result = BigInt('0x' + Array.from(arr).map(b => b.toString(16).padStart(2,'0')).join(''));
+    result = result % range;
+  } while (result < 0n);
+  return result + min;
+}
+
+function generateRandomPrime(bits) {
+  const min = 1n << BigInt(bits - 1);
+  const max = (1n << BigInt(bits)) - 1n;
+  let candidate;
+  do {
+    candidate = randomBigInt(min, max);
+    if (candidate % 2n === 0n) candidate += 1n;
+  } while (!millerRabin(candidate));
+  return candidate;
+}
+
+// Global key storage
+let keyStore = { p: null, q: null, n: null, e: null, d: null, phi: null };
+
+function setProgress(id, pct) {
+  document.getElementById(id).style.width = pct + '%';
+}
+function setStatus(id, msg, cls = '') {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'status-line ' + cls;
+}
+
+async function generateKeys() {
+  const source = document.querySelector('input[name="prime-source"]:checked').value;
+  setStatus('keygen-status', 'Generating primes...');
+  setProgress('keygen-progress', 10);
+  document.getElementById('keys-panel').style.display = 'none';
+
+  await sleep(50);
+
+  let p, q;
+  try {
+    if (source === 'auto') {
+      setStatus('keygen-status', 'Searching for 512-bit prime p...');
+      setProgress('keygen-progress', 20);
+      await sleep(30);
+      p = generateRandomPrime(512);
+      setStatus('keygen-status', 'Prime p found! Searching for prime q...');
+      setProgress('keygen-progress', 50);
+      await sleep(30);
+      do { q = generateRandomPrime(512); } while (q === p);
+      setStatus('keygen-status', 'Prime q found! Computing keys...');
+    } else {
+      const pStr = document.getElementById('prime-p').value.trim();
+      const qStr = document.getElementById('prime-q').value.trim();
+      try { p = BigInt(pStr); q = BigInt(qStr); } catch(e) { setStatus('keygen-status','Invalid prime input','err'); return; }
+      if (!millerRabin(p) || !millerRabin(q)) { setStatus('keygen-status','Input values are not prime!','err'); return; }
+      if (p === q) { setStatus('keygen-status','P and Q must be different!','err'); return; }
+    }
+
+    setProgress('keygen-progress', 70);
+    await sleep(20);
+
+    const n = p * q;
+    const phi = (p - 1n) * (q - 1n);
+    let e = 65537n;
+    while (gcd(e, phi) !== 1n) e += 2n;
+    const d = modInverse(e, phi);
+
+    keyStore = { p, q, n, e, d, phi };
+
+    setProgress('keygen-progress', 100);
+    setStatus('keygen-status', '✓ KEY PAIR GENERATED SUCCESSFULLY', 'ok');
+
+    // Display keys
+    document.getElementById('pub-key-display').textContent = `e = ${e.toString()}\nn = ${n.toString(16).slice(0,40)}...`;
+    document.getElementById('priv-key-display').textContent = `d = ${d.toString(16).slice(0,40)}...\nn = ${n.toString(16).slice(0,40)}...`;
+    document.getElementById('modulus-display').textContent = n.toString(16).slice(0,80) + '...';
+    document.getElementById('phi-display').textContent = phi.toString(16).slice(0,80) + '...';
+    document.getElementById('keys-panel').style.display = 'block';
+
+    // Auto-fill encrypt/decrypt fields
+    document.getElementById('enc-e').value = e.toString();
+    document.getElementById('enc-n').value = n.toString();
+    document.getElementById('dec-d').value = d.toString();
+    document.getElementById('dec-n').value = n.toString();
+
+    buildKeygenSteps(p, q, n, phi, e, d);
+  } catch(err) {
+    setStatus('keygen-status', 'Error: ' + err.message, 'err');
+  }
+}
+
+function buildKeygenSteps(p, q, n, phi, e, d) {
+  const box = document.getElementById('keygen-steps');
+  box.innerHTML = `
+<div class="step-line"><span class="label">STEP 1:</span> Choose two large primes p and q</div>
+<div class="step-line">  p = <span class="val">${p.toString(16).slice(0,32)}...</span> (512-bit)</div>
+<div class="step-line">  q = <span class="val">${q.toString(16).slice(0,32)}...</span> (512-bit)</div>
+<div class="step-line"><span class="label">STEP 2:</span> Compute modulus n = p × q</div>
+<div class="step-line">  n = <span class="val">${n.toString(16).slice(0,32)}...</span> (1024-bit)</div>
+<div class="step-line"><span class="label">STEP 3:</span> Compute Euler's totient φ(n) = (p-1)(q-1)</div>
+<div class="step-line">  φ(n) = <span class="val">${phi.toString(16).slice(0,32)}...</span></div>
+<div class="step-line"><span class="label">STEP 4:</span> Choose public exponent e (coprime to φ(n))</div>
+<div class="step-line">  e = <span class="val">${e.toString()}</span> (gcd(e,φ(n)) = 1)</div>
+<div class="step-line"><span class="label">STEP 5:</span> Compute private exponent d = e⁻¹ mod φ(n)</div>
+<div class="step-line">  d = <span class="val">${d.toString(16).slice(0,32)}...</span></div>
+<div class="step-line"><span class="label">PUBLIC KEY:</span>  (e, n) | <span class="label">PRIVATE KEY:</span> (d, n)</div>
+  `;
+}
+
+function toggleEduKeygen() {
+  const box = document.getElementById('keygen-steps');
+  box.classList.toggle('visible', document.getElementById('edu-toggle-keygen').checked);
+}
+
+async function encryptMessage() {
+  const eStr = document.getElementById('enc-e').value.trim();
+  const nStr = document.getElementById('enc-n').value.trim();
+  const msg = document.getElementById('plaintext').value.trim();
+  if (!eStr || !nStr || !msg) { setStatus('enc-status','Fill all fields','err'); return; }
+
+  setStatus('enc-status', 'Encrypting...');
+  setProgress('enc-progress', 20);
+  await sleep(30);
+
+  try {
+    const e = BigInt(eStr);
+    const n = BigInt(nStr);
+    const bytes = new TextEncoder().encode(msg);
+    const m = BigInt('0x' + Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join(''));
+
+    if (m >= n) { setStatus('enc-status','Message too long for key size','err'); return; }
+
+    setProgress('enc-progress', 60);
+    await sleep(30);
+
+    const c = modPow(m, e, n);
+    const hex = c.toString(16);
+
+    setProgress('enc-progress', 100);
+    setStatus('enc-status', '✓ ENCRYPTED', 'ok');
+    document.getElementById('ciphertext-display').textContent = hex;
+    document.getElementById('ciphertext-input').value = hex;
+
+    if (document.getElementById('edu-toggle-enc').checked) {
+      const steps = document.getElementById('enc-steps');
+      steps.innerHTML = `
+<div class="step-line"><span class="label">FORMULA:</span> c = m^e mod n</div>
+<div class="step-line">  m (plaintext as BigInt) = <span class="val">${m.toString(16).slice(0,32)}...</span></div>
+<div class="step-line">  e (public exponent) = <span class="val">${e.toString()}</span></div>
+<div class="step-line">  n (modulus) = <span class="val">${n.toString(16).slice(0,32)}...</span></div>
+<div class="step-line">  c = m^e mod n = <span class="val">${hex.slice(0,32)}...</span></div>
+<div class="step-line"><span class="label">NOTE:</span> Computed via fast modular exponentiation (square & multiply)</div>
+      `;
+      steps.classList.add('visible');
+    } else {
+      document.getElementById('enc-steps').classList.remove('visible');
+    }
+  } catch(err) {
+    setStatus('enc-status', 'Error: ' + err.message, 'err');
+  }
+}
+
+async function decryptMessage() {
+  const dStr = document.getElementById('dec-d').value.trim();
+  const nStr = document.getElementById('dec-n').value.trim();
+  const hex = document.getElementById('ciphertext-input').value.trim();
+  if (!dStr || !nStr || !hex) { setStatus('dec-status','Fill all fields','err'); return; }
+
+  setStatus('dec-status', 'Decrypting...');
+  setProgress('dec-progress', 20);
+  await sleep(30);
+
+  try {
+    const d = BigInt(dStr);
+    const n = BigInt(nStr);
+    const c = BigInt('0x' + hex);
+
+    setProgress('dec-progress', 60);
+    await sleep(30);
+
+    const m = modPow(c, d, n);
+    let hexM = m.toString(16);
+    if (hexM.length % 2) hexM = '0' + hexM;
+    const bytes = [];
+    for (let i = 0; i < hexM.length; i += 2) bytes.push(parseInt(hexM.slice(i, i+2), 16));
+    const text = new TextDecoder().decode(new Uint8Array(bytes));
+
+    setProgress('dec-progress', 100);
+    setStatus('dec-status', '✓ DECRYPTED', 'ok');
+    document.getElementById('decrypted-display').textContent = text;
+
+    if (document.getElementById('edu-toggle-dec').checked) {
+      const steps = document.getElementById('dec-steps');
+      steps.innerHTML = `
+<div class="step-line"><span class="label">FORMULA:</span> m = c^d mod n</div>
+<div class="step-line">  c (ciphertext) = <span class="val">${hex.slice(0,32)}...</span></div>
+<div class="step-line">  d (private exponent) = <span class="val">${d.toString(16).slice(0,32)}...</span></div>
+<div class="step-line">  n (modulus) = <span class="val">${n.toString(16).slice(0,32)}...</span></div>
+<div class="step-line">  m = c^d mod n = <span class="val">${m.toString(16).slice(0,32)}...</span></div>
+<div class="step-line"><span class="label">RESULT:</span> Decoded bytes → <span class="val">"${text}"</span></div>
+      `;
+      steps.classList.add('visible');
+    } else {
+      document.getElementById('dec-steps').classList.remove('visible');
+    }
+  } catch(err) {
+    setStatus('dec-status', 'Error: ' + err.message, 'err');
+  }
+}
+
+// =====================
+// Sieve of Eratosthenes
+// =====================
+async function runSieve() {
+  let limit = parseInt(document.getElementById('sieve-limit').value) || 100;
+  limit = Math.min(limit, 200);
+  const grid = document.getElementById('sieve-grid');
+  grid.innerHTML = '';
+  const cells = [];
+  const composite = new Array(limit + 1).fill(false);
+
+  for (let i = 2; i <= limit; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'sieve-cell';
+    cell.textContent = i;
+    cell.id = 'cell-' + i;
+    grid.appendChild(cell);
+    cells.push(cell);
+  }
+
+  setStatus('sieve-status', 'Running sieve...');
+  let primeCount = 0;
+
+  for (let i = 2; i <= Math.sqrt(limit); i++) {
+    if (!composite[i]) {
+      cells[i-2].classList.add('current');
+      await sleep(120);
+      cells[i-2].classList.remove('current');
+      cells[i-2].classList.add('prime');
+      primeCount++;
+      for (let j = i*i; j <= limit; j += i) {
+        composite[j] = true;
+        cells[j-2].classList.add('composite');
+        await sleep(18);
+      }
+    }
+  }
+  for (let i = 2; i <= limit; i++) {
+    if (!composite[i]) { cells[i-2].classList.add('prime'); primeCount++; }
+  }
+  // Recount cleanly
+  primeCount = cells.filter(c => c.classList.contains('prime')).length;
+  setStatus('sieve-status', `Found ${primeCount} primes up to ${limit}`, 'ok');
+}
+
+// =====================
+// Riemann Zeta Zeros Chart
+// =====================
+function drawZetaChart() {
+  // Known imaginary parts of first 30 non-trivial zeros
+  const zeros = [14.134725,21.022040,25.010858,30.424876,32.935062,37.586178,40.918720,43.327073,
+    48.005150,49.773832,52.970321,56.446248,59.347044,60.831779,65.112544,67.079811,
+    69.546402,72.067158,75.704691,77.144840,79.337375,82.910381,84.735493,87.425275,
+    88.809111,92.491899,94.651344,95.870634,98.831194,101.317851];
+
+  const ctx = document.getElementById('zeta-chart').getContext('2d');
+  new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: 'Zeta Zeros',
+        data: zeros.map(z => ({ x: 0.5, y: z })),
+        backgroundColor: 'rgba(0,240,255,0.8)',
+        borderColor: 'rgba(0,240,255,1)',
+        pointRadius: 5,
+        pointHoverRadius: 7,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#3a7a9c', font: { family: 'Share Tech Mono', size: 10 } } },
+        tooltip: { callbacks: { label: ctx => `Im = ${ctx.parsed.y.toFixed(6)}` } }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Re(s) = ½', color: '#3a7a9c', font: { family: 'Share Tech Mono' } },
+          min: 0, max: 1,
+          ticks: { color: '#3a7a9c', font: { family: 'Share Tech Mono', size: 9 } },
+          grid: { color: 'rgba(0,240,255,0.06)' }
+        },
+        y: {
+          title: { display: true, text: 'Im(s)', color: '#3a7a9c', font: { family: 'Share Tech Mono' } },
+          ticks: { color: '#3a7a9c', font: { family: 'Share Tech Mono', size: 9 } },
+          grid: { color: 'rgba(0,240,255,0.06)' }
+        }
+      },
+      backgroundColor: 'transparent'
+    }
+  });
+}
+
+// =====================
+// Prime Gap Chart
+// =====================
+function drawGapChart() {
+  const primes = [];
+  const sieve = new Array(1001).fill(true);
+  for (let i = 2; i <= 1000; i++) {
+    if (sieve[i]) {
+      primes.push(i);
+      for (let j = i*i; j <= 1000; j += i) sieve[j] = false;
+    }
+  }
+  const gapCount = {};
+  for (let i = 1; i < primes.length; i++) {
+    const gap = primes[i] - primes[i-1];
+    gapCount[gap] = (gapCount[gap] || 0) + 1;
+  }
+  const labels = Object.keys(gapCount).sort((a,b) => a-b);
+  const values = labels.map(l => gapCount[l]);
+
+  const ctx = document.getElementById('gap-chart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Frequency',
+        data: values,
+        backgroundColor: labels.map((_, i) => `hsla(${150 + i*8}, 100%, 55%, 0.7)`),
+        borderColor: 'rgba(0,255,136,0.8)',
+        borderWidth: 1,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#3a7a9c', font: { family: 'Share Tech Mono', size: 10 } } }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Gap Size', color: '#3a7a9c', font: { family: 'Share Tech Mono' } },
+          ticks: { color: '#3a7a9c', font: { family: 'Share Tech Mono', size: 9 } },
+          grid: { color: 'rgba(0,240,255,0.06)' }
+        },
+        y: {
+          title: { display: true, text: 'Count', color: '#3a7a9c', font: { family: 'Share Tech Mono' } },
+          ticks: { color: '#3a7a9c', font: { family: 'Share Tech Mono', size: 9 } },
+          grid: { color: 'rgba(0,240,255,0.06)' }
+        }
+      }
+    }
+  });
+}
+
+// =====================
+// UI Utilities
+// =====================
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'visualizer') {
+    setTimeout(() => { drawZetaChart(); drawGapChart(); }, 100);
+  }
+}
+
+function togglePrimeInput() {
+  const isManual = document.querySelector('input[name="prime-source"]:checked').value === 'manual';
+  document.getElementById('manual-inputs').style.display = isManual ? 'block' : 'none';
+  document.getElementById('auto-note').style.display = isManual ? 'none' : 'block';
+}
+
+function copyText(id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = 'COPIED!';
+    setTimeout(() => btn.textContent = 'COPY', 1500);
+  });
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
