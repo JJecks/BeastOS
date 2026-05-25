@@ -1,0 +1,21 @@
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, getDocs }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    // PASTE YOUR CONFIG HERE
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  window.fbAuth = auth;
+  window.fbDb = db;
+  window.fbFns = { createUserWithEmailAndPassword, signInWithEmailAndPassword,
+                   signOut, doc, setDoc, getDoc, collection, addDoc, query, getDocs };
+</script>
