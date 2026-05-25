@@ -1,0 +1,10 @@
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyD5xZbf3ErkYHQo_BXf492YvYo5lFQfzpA",
+  authDomain: "https://jbeast-os.vercel.app/",
+  projectId: "jecks-operating-system",
+  storageBucket: "jecks-operating-system.firebasestorage.app",
+  messagingSenderId: "85119343233",
+  appId: "1:85119343233:web:662acc1e5f130270824b80",
+  measurementId: "G-HMM314ETV4"
+};
