@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JecksOS · v1.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;600;700;900&family=Exo+2:ital,wght@0,200;0,300;0,400;1,200&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════
+   JECKS OS — ROOT VARIABLES & RESET
+═══════════════════════════════════════════ */
+:root {
+  --os-bg:        #04070f;
+  --glass:        rgba(10,16,30,0.72);
+  --glass2:       rgba(255,255,255,0.04);
+  --border:       rgba(255,255,255,0.07);
+  --gold:         #c8a84b;
+  --gold2:        #f0d07a;
+  --gold-glow:    rgba(200,168,75,0.25);
+  --cyan:         #00d4ff;
+  --cyan2:        #80eeff;
+  --cyan-glow:    rgba(0,212,255,0.2);
+  --red:          #ff3c3c;
+  --green:        #00e676;
+  --text:         #d8e4f0;
+  --dim:          #4a6080;
+  --taskbar-h:    48px;
+  --radius:       10px;
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html, body {
+  width:100%; height:100%;
+  overflow:hidden;
+  background:var(--os-bg);
+  color:var(--text);
+  font-family:'Rajdhani', sans-serif;
+  font-size:14px;
+  user-select:none;
+  cursor:default;
+}
+
+/* ═══════════════════════════════════════════
+   ANIMATED BACKGROUND
+═══════════════════════════════════════════ */
+#os-bg {
+  position:fixed; inset:0; z-index:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(0,80,180,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 90%, rgba(200,168,75,0.08) 0%, transparent 55%),
+    radial-gradient(ellipse 100% 100% at 50% 50%, #04070f 0%, #020408 100%);
+}
+#os-bg canvas { position:absolute; inset:0; opacity:0.35; }
+
+/* Scanlines */
+#os-bg::after {
+  content:'';
+  position:absolute; inset:0;
+  background:repeating-linear-gradient(
+    0deg, transparent, transparent 3px,
+    rgba(0,212,255,0.008) 3px, rgba(0,212,255,0.008) 4px
+  );
+  pointer-events:none;
+}
+
+/* ═══════════════════════════════════════════
+   BOOT SCREEN
+═══════════════════════════════════════════ */
+#boot-screen {
+  position:fixed; inset:0; z-index:9000;
+  background:#000;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:0;
+}
+.boot-logo {
+  font-family:'Orbitron', monospace;
+  font-size:clamp(2rem, 6vw, 4rem);
+  font-weight:900;
+  letter-spacing:0.18em;
+  color:var(--gold);
+  text-shadow: 0 0 40px var(--gold-glow), 0 0 80px rgba(200,168,75,0.1);
+  opacity:0;
+  animation: bootLogoIn 1.2s 0.3s ease forwards;
+}
+.boot-sub {
+  font-family:'Exo 2', sans-serif;
+  font-size:0.85rem;
+  letter-spacing:0.4em;
+  color:var(--dim);
+  text-transform:uppercase;
+  margin-top:0.6rem;
+  opacity:0;
+  animation: bootLogoIn 1s 1s ease forwards;
+}
+.boot-bar-wrap {
+  width:280px; height:2px;
+  background:rgba(255,255,255,0.06);
+  margin-top:2.5rem;
+  overflow:hidden;
+  opacity:0;
+  animation: bootLogoIn 0.5s 1.4s ease forwards;
+}
+.boot-bar {
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg, var(--cyan), var(--gold));
+  box-shadow:0 0 8px var(--cyan);
+  animation: bootProgress 2s 1.5s ease forwards;
+}
+.boot-status {
+  font-family:'Orbitron', monospace;
+  font-size:0.6rem;
+  color:var(--dim);
+  letter-spacing:0.2em;
+  margin-top:0.8rem;
+  opacity:0;
+  animation: bootLogoIn 0.5s 1.6s ease forwards;
+}
+.boot-status span {
+  color:var(--cyan);
+  animation:blink 0.8s step-end infinite;
+}
+@keyframes bootLogoIn { to { opacity:1; } }
+@keyframes bootProgress { to { width:100%; } }
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+
+/* ═══════════════════════════════════════════
+   LOGIN SCREEN
+═══════════════════════════════════════════ */
+#login-screen {
+  position:fixed; inset:0; z-index:8000;
+  display:none;
+  align-items:center; justify-content:center;
+  flex-direction:column;
+}
+.login-time {
+  font-family:'Orbitron', monospace;
+  font-size:clamp(3rem, 10vw, 6rem);
+  font-weight:700;
+  color:rgba(255,255,255,0.9);
+  text-align:center;
+  text-shadow:0 2px 30px rgba(0,0,0,0.5);
+  letter-spacing:0.06em;
+  margin-bottom:0.3rem;
+}
+.login-date {
+  font-family:'Exo 2', sans-serif;
+  font-size:1rem;
+  color:rgba(255,255,255,0.4);
+  letter-spacing:0.3em;
+  text-align:center;
+  margin-bottom:2.5rem;
+  text-transform:uppercase;
+}
+.login-box {
+  background:rgba(255,255,255,0.05);
+  backdrop-filter:blur(24px) saturate(1.5);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:16px;
+  padding:2rem 2.5rem;
+  width:100%; max-width:340px;
+  box-shadow:0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+}
+.login-avatar {
+  width:64px; height:64px;
+  border-radius:50%;
+  background:linear-gradient(135deg, var(--cyan), var(--gold));
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Orbitron', monospace;
+  font-size:1.5rem; font-weight:900;
+  color:#000;
+  margin:0 auto 1rem;
+  box-shadow:0 0 20px var(--cyan-glow);
+}
+.login-username {
+  font-family:'Orbitron', monospace;
+  font-size:0.85rem;
+  font-weight:600;
+  text-align:center;
+  letter-spacing:0.15em;
+  color:var(--text);
+  margin-bottom:1.2rem;
+}
+.login-input {
+  width:100%;
+  background:rgba(0,0,0,0.4);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:8px;
+  color:var(--text);
+  font-family:'Rajdhani', sans-serif;
+  font-size:1rem;
+  padding:0.65rem 1rem;
+  outline:none;
+  text-align:center;
+  letter-spacing:0.15em;
+  transition:border-color 0.2s, box-shadow 0.2s;
+}
+.login-input:focus {
+  border-color:rgba(0,212,255,0.5);
+  box-shadow:0 0 12px rgba(0,212,255,0.15);
+}
+.login-btn {
+  width:100%;
+  margin-top:0.9rem;
+  padding:0.7rem;
+  border-radius:8px;
+  border:none;
+  background:linear-gradient(135deg, var(--cyan), rgba(0,100,200,0.8));
+  color:#000;
+  font-family:'Orbitron', monospace;
+  font-size:0.72rem;
+  font-weight:700;
+  letter-spacing:0.2em;
+  text-transform:uppercase;
+  cursor:pointer;
+  transition:all 0.2s;
+  box-shadow:0 4px 16px var(--cyan-glow);
+}
+.login-btn:hover { opacity:0.9; transform:translateY(-1px); }
+.login-err {
+  font-size:0.75rem;
+  color:var(--red);
+  text-align:center;
+  margin-top:0.6rem;
+  min-height:1.1em;
+  letter-spacing:0.05em;
+}
+.login-hint {
+  font-size:0.7rem;
+  color:var(--dim);
+  text-align:center;
+  margin-top:0.5rem;
+  letter-spacing:0.05em;
+}
+
+/* ═══════════════════════════════════════════
+   DESKTOP
+═══════════════════════════════════════════ */
+#desktop {
+  position:fixed; inset:0;
+  z-index:100;
+  display:none;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+/* ── TASKBAR ── */
+#taskbar {
+  position:absolute;
+  bottom:0; left:0; right:0;
+  height:var(--taskbar-h);
+  background:rgba(6,10,20,0.85);
+  backdrop-filter:blur(30px) saturate(1.8);
+  border-top:1px solid var(--border);
+  display:flex; align-items:center;
+  padding:0 0.8rem;
+  gap:0.5rem;
+  z-index:200;
+  box-shadow:0 -8px 32px rgba(0,0,0,0.4);
+}
+.taskbar-start {
+  display:flex; align-items:center; gap:0.5rem;
+  padding:0.3rem 0.8rem;
+  border-radius:6px;
+  background:linear-gradient(135deg, rgba(200,168,75,0.15), rgba(0,212,255,0.08));
+  border:1px solid rgba(200,168,75,0.25);
+  cursor:pointer;
+  transition:all 0.2s;
+  flex-shrink:0;
+}
+.taskbar-start:hover {
+  background:linear-gradient(135deg, rgba(200,168,75,0.25), rgba(0,212,255,0.15));
+  box-shadow:0 0 12px var(--gold-glow);
+}
+.taskbar-start span:first-child {
+  font-family:'Orbitron', monospace;
+  font-size:0.75rem;
+  font-weight:900;
+  color:var(--gold);
+  letter-spacing:0.12em;
+}
+.taskbar-apps {
+  flex:1;
+  display:flex; align-items:center; gap:4px;
+  overflow-x:auto; overflow-y:hidden;
+  padding:0 0.3rem;
+}
+.taskbar-apps::-webkit-scrollbar { display:none; }
+.tb-app {
+  display:flex; align-items:center; gap:0.4rem;
+  padding:0.3rem 0.7rem;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:0.75rem;
+  font-weight:500;
+  color:var(--dim);
+  white-space:nowrap;
+  transition:all 0.15s;
+  border:1px solid transparent;
+  position:relative;
+}
+.tb-app.open {
+  color:var(--text);
+  background:rgba(255,255,255,0.07);
+  border-color:var(--border);
+}
+.tb-app.open::after {
+  content:'';
+  position:absolute; bottom:-2px; left:50%; transform:translateX(-50%);
+  width:18px; height:2px;
+  background:var(--cyan);
+  border-radius:2px;
+  box-shadow:0 0 6px var(--cyan);
+}
+.tb-app:hover { color:var(--text); background:rgba(255,255,255,0.05); }
+.taskbar-right {
+  display:flex; align-items:center; gap:0.8rem;
+  padding-left:0.8rem;
+  border-left:1px solid var(--border);
+  flex-shrink:0;
+}
+.tb-clock {
+  font-family:'Orbitron', monospace;
+  font-size:0.7rem;
+  color:var(--text);
+  text-align:right;
+  line-height:1.4;
+  letter-spacing:0.08em;
+}
+.tb-clock .tb-date { font-size:0.6rem; color:var(--dim); }
+.tb-icon {
+  font-size:1rem; cursor:pointer;
+  opacity:0.6; transition:opacity 0.15s;
+}
+.tb-icon:hover { opacity:1; }
+
+/* ── WORKSPACE (above taskbar) ── */
+#workspace {
+  position:absolute;
+  top:0; left:0; right:0;
+  bottom:var(--taskbar-h);
+  overflow:hidden;
+}
+
+/* ── DESKTOP ICONS ── */
+#icon-grid {
+  position:absolute;
+  top:1.5rem; left:1.5rem;
+  display:flex; flex-direction:column;
+  gap:0.8rem;
+  z-index:110;
+}
+.desk-icon {
+  display:flex; flex-direction:column;
+  align-items:center; gap:0.3rem;
+  width:72px; cursor:pointer;
+  padding:0.5rem;
+  border-radius:10px;
+  border:1px solid transparent;
+  transition:all 0.2s;
+}
+.desk-icon:hover {
+  background:rgba(255,255,255,0.06);
+  border-color:var(--border);
+}
+.desk-icon.selected {
+  background:rgba(0,212,255,0.1);
+  border-color:rgba(0,212,255,0.3);
+}
+.icon-emoji { font-size:2rem; line-height:1; }
+.icon-label {
+  font-size:0.65rem; font-weight:600;
+  color:var(--text); text-align:center;
+  letter-spacing:0.04em; line-height:1.3;
+  text-shadow:0 1px 4px rgba(0,0,0,0.9);
+  word-break:break-word;
+}
+
+/* ── WINDOWS ── */
+.os-window {
+  position:absolute;
+  background:var(--glass);
+  backdrop-filter:blur(32px) saturate(1.6);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:
+    0 32px 80px rgba(0,0,0,0.7),
+    0 0 0 1px rgba(255,255,255,0.04),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+  overflow:hidden;
+  display:flex; flex-direction:column;
+  min-width:340px; min-height:240px;
+  transition:box-shadow 0.2s, opacity 0.15s;
+  z-index:150;
+}
+.os-window.focused {
+  box-shadow:
+    0 40px 100px rgba(0,0,0,0.8),
+    0 0 0 1px rgba(0,212,255,0.15),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+  border-color:rgba(0,212,255,0.18);
+}
+.os-window.minimized { display:none; }
+.os-window.maximized {
+  top:0!important; left:0!important;
+  width:100%!important; height:100%!important;
+  border-radius:0; border:none;
+}
+
+/* Title bar */
+.win-titlebar {
+  display:flex; align-items:center;
+  padding:0 0.8rem;
+  height:36px;
+  background:rgba(0,0,0,0.25);
+  border-bottom:1px solid var(--border);
+  cursor:move;
+  flex-shrink:0;
+  gap:0.5rem;
+}
+.win-controls {
+  display:flex; gap:6px;
+  flex-shrink:0;
+}
+.win-btn {
+  width:12px; height:12px;
+  border-radius:50%;
+  border:none; cursor:pointer;
+  transition:filter 0.15s;
+  flex-shrink:0;
+}
+.win-btn:hover { filter:brightness(1.4); }
+.win-btn.close { background:#ff5f57; }
+.win-btn.min { background:#febc2e; }
+.win-btn.max { background:#28c840; }
+.win-title {
+  flex:1;
+  font-family:'Orbitron', monospace;
+  font-size:0.65rem;
+  font-weight:600;
+  letter-spacing:0.15em;
+  color:var(--dim);
+  text-align:center;
+  text-transform:uppercase;
+  truncate:ellipsis;
+  white-space:nowrap;
+  overflow:hidden;
+}
+.win-icon { font-size:0.9rem; }
+
+/* Window body */
+.win-body {
+  flex:1; overflow:hidden;
+  position:relative;
+}
+.win-body iframe {
+  width:100%; height:100%;
+  border:none;
+  display:block;
+}
+/* Loading state */
+.win-loading {
+  position:absolute; inset:0;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:0.8rem;
+  background:var(--glass);
+}
+.win-loading-spinner {
+  width:32px; height:32px;
+  border:2px solid var(--border);
+  border-top-color:var(--cyan);
+  border-radius:50%;
+  animation:spin 0.7s linear infinite;
+}
+.win-loading-text {
+  font-family:'Orbitron', monospace;
+  font-size:0.6rem;
+  color:var(--dim);
+  letter-spacing:0.2em;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* Resize handle */
+.win-resize {
+  position:absolute; bottom:0; right:0;
+  width:16px; height:16px;
+  cursor:se-resize;
+  opacity:0.3;
+}
+.win-resize::after {
+  content:'';
+  position:absolute; bottom:3px; right:3px;
+  width:8px; height:8px;
+  border-right:2px solid var(--dim);
+  border-bottom:2px solid var(--dim);
+}
+
+/* ── NOTIFICATION ── */
+.os-notif {
+  position:fixed;
+  top:1rem; right:1rem;
+  z-index:9000;
+  background:rgba(10,16,30,0.95);
+  backdrop-filter:blur(20px);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:0.8rem 1.1rem;
+  min-width:260px; max-width:320px;
+  box-shadow:0 12px 40px rgba(0,0,0,0.5);
+  display:flex; gap:0.8rem; align-items:flex-start;
+  animation:notifIn 0.3s ease;
+  border-left:3px solid var(--cyan);
+}
+.os-notif.warn { border-left-color:var(--gold); }
+.os-notif.err { border-left-color:var(--red); }
+.notif-icon { font-size:1.3rem; flex-shrink:0; }
+.notif-content { flex:1; }
+.notif-title {
+  font-size:0.78rem; font-weight:700;
+  color:var(--text); margin-bottom:0.2rem;
+}
+.notif-msg { font-size:0.72rem; color:var(--dim); line-height:1.5; }
+@keyframes notifIn {
+  from { transform:translateX(110%); opacity:0; }
+  to   { transform:none; opacity:1; }
+}
+
+/* ── RIGHT-CLICK MENU ── */
+#ctx-menu {
+  position:fixed;
+  z-index:9999;
+  background:rgba(10,16,30,0.95);
+  backdrop-filter:blur(20px);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:0.3rem;
+  min-width:180px;
+  box-shadow:0 12px 40px rgba(0,0,0,0.6);
+  display:none;
+}
+.ctx-item {
+  padding:0.45rem 0.9rem;
+  border-radius:5px;
+  font-size:0.8rem;
+  cursor:pointer;
+  color:var(--text);
+  display:flex; align-items:center; gap:0.6rem;
+  transition:background 0.1s;
+}
+.ctx-item:hover { background:rgba(255,255,255,0.07); }
+.ctx-sep { height:1px; background:var(--border); margin:0.3rem 0; }
+
+/* ── START MENU ── */
+#start-menu {
+  position:fixed;
+  bottom:calc(var(--taskbar-h) + 6px);
+  left:0.8rem;
+  width:320px;
+  background:rgba(8,12,22,0.96);
+  backdrop-filter:blur(40px) saturate(2);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:12px;
+  box-shadow:0 -24px 60px rgba(0,0,0,0.7);
+  z-index:8000;
+  display:none;
+  overflow:hidden;
+  animation:startIn 0.2s ease;
+}
+@keyframes startIn {
+  from { transform:translateY(10px) scale(0.97); opacity:0; }
+  to   { transform:none; opacity:1; }
+}
+.start-header {
+  padding:1.2rem 1rem 0.8rem;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:0.8rem;
+}
+.start-avatar {
+  width:40px; height:40px; border-radius:50%;
+  background:linear-gradient(135deg,var(--cyan),var(--gold));
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Orbitron',monospace; font-size:1rem; font-weight:900; color:#000;
+  box-shadow:0 0 12px var(--cyan-glow);
+}
+.start-user { font-weight:700; font-size:0.9rem; }
+.start-role { font-size:0.68rem; color:var(--gold); letter-spacing:0.1em; }
+.start-apps {
+  padding:0.6rem;
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:4px;
+}
+.start-app {
+  display:flex; align-items:center; gap:0.6rem;
+  padding:0.55rem 0.7rem; border-radius:7px;
+  cursor:pointer; transition:background 0.15s;
+  font-size:0.8rem; font-weight:500; color:var(--text);
+}
+.start-app:hover { background:rgba(255,255,255,0.07); }
+.start-app-icon { font-size:1.2rem; }
+.start-footer {
+  border-top:1px solid var(--border);
+  padding:0.6rem;
+  display:flex; justify-content:space-between;
+}
+.start-action {
+  display:flex; align-items:center; gap:0.4rem;
+  padding:0.4rem 0.7rem; border-radius:6px;
+  cursor:pointer; font-size:0.75rem; color:var(--dim);
+  transition:all 0.15s;
+}
+.start-action:hover { background:rgba(255,255,255,0.07); color:var(--text); }
+
+/* ── SECURITY LAYER ── */
+#security-overlay {
+  position:fixed; inset:0; z-index:99999;
+  background:#000;
+  display:none;
+  flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:1rem;
+}
+.sec-warning {
+  font-family:'Orbitron', monospace;
+  font-size:1.2rem; font-weight:900;
+  color:var(--red);
+  letter-spacing:0.1em;
+  text-align:center;
+  animation:secPulse 0.5s ease infinite alternate;
+}
+@keyframes secPulse { from{opacity:1;} to{opacity:0.4;} }
+.sec-msg { font-size:0.8rem; color:var(--dim); text-align:center; max-width:400px; line-height:1.8; }
+
+/* ── WALLPAPER PICKER (subtle) ── */
+.wallpaper-1 { background: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(0,80,180,0.18) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 90%, rgba(200,168,75,0.1) 0%, transparent 55%), #04070f; }
+.wallpaper-2 { background: radial-gradient(ellipse 100% 80% at 50% 0%, rgba(0,100,60,0.2) 0%, transparent 60%), #040d08; }
+.wallpaper-3 { background: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(80,0,160,0.2) 0%, transparent 65%), #07040f; }
+
+/* Misc */
+.no-select { user-select:none; }
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:4px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════ BACKGROUND ═══════ -->
+<div id="os-bg">
+  <canvas id="bg-canvas"></canvas>
+</div>
+
+<!-- ═══════ BOOT SCREEN ═══════ -->
+<div id="boot-screen">
+  <div class="boot-logo">JecksOS</div>
+  <div class="boot-sub">Powered by BEAST Engine · v1.0</div>
+  <div class="boot-bar-wrap">
+    <div class="boot-bar"></div>
+  </div>
+  <div class="boot-status">Initializing secure kernel<span>_</span></div>
+</div>
+
+<!-- ═══════ LOGIN SCREEN ═══════ -->
+<div id="login-screen">
+  <div class="login-time" id="login-time">00:00</div>
+  <div class="login-date" id="login-date">—</div>
+  <div class="login-box">
+    <div class="login-avatar" id="login-avatar">J</div>
+    <div class="login-username">JECKSTOM · ADMIN</div>
+    <input class="login-input" type="password" id="login-pass"
+      placeholder="Enter passcode" autocomplete="off"
+      onkeydown="if(event.key==='Enter')loginOS()"/>
+    <button class="login-btn" onclick="loginOS()">▶ UNLOCK</button>
+    <div class="login-err" id="login-err"></div>
+    <div class="login-hint">Default: jecks7 · Change in Settings</div>
+  </div>
+</div>
+
+<!-- ═══════ DESKTOP ═══════ -->
+<div id="desktop">
+
+  <!-- WORKSPACE -->
+  <div id="workspace">
+
+    <!-- WALLPAPER layer (behind windows) -->
+    <div id="wallpaper-layer" style="position:absolute;inset:0;z-index:100;pointer-events:none;
+      background:radial-gradient(ellipse 70% 50% at 15% 10%,rgba(0,80,180,0.1),transparent 55%),
+                 radial-gradient(ellipse 50% 40% at 85% 85%,rgba(200,168,75,0.07),transparent 50%)">
+    </div>
+
+    <!-- DESKTOP ICONS -->
+    <div id="icon-grid"></div>
+
+    <!-- WINDOWS CONTAINER -->
+    <div id="windows-container" style="position:absolute;inset:0;z-index:150;pointer-events:none;"></div>
+
+  </div>
+
+  <!-- TASKBAR -->
+  <div id="taskbar">
+    <div class="taskbar-start" onclick="toggleStartMenu()">
+      <span>JecksOS</span>
+      <span style="font-size:0.6rem;color:var(--dim)">▲</span>
+    </div>
+    <div class="taskbar-apps" id="taskbar-apps"></div>
+    <div class="taskbar-right">
+      <span class="tb-icon" title="Security Status" id="sec-icon">🔒</span>
+      <span class="tb-icon" title="Network" id="net-icon">📶</span>
+      <div class="tb-clock">
+        <div id="tb-time">00:00</div>
+        <div class="tb-date" id="tb-date">—</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /desktop -->
+
+<!-- ═══════ START MENU ═══════ -->
+<div id="start-menu">
+  <div class="start-header">
+    <div class="start-avatar">J</div>
+    <div>
+      <div class="start-user">Jeckstom</div>
+      <div class="start-role">⬡ OS ADMINISTRATOR</div>
+    </div>
+  </div>
+  <div class="start-apps" id="start-apps-list"></div>
+  <div class="start-footer">
+    <div class="start-action" onclick="lockOS()">🔒 Lock</div>
+    <div class="start-action" onclick="showSettings()">⚙ Settings</div>
+    <div class="start-action" onclick="shutdownOS()" style="color:var(--red)">⏻ Shutdown</div>
+  </div>
+</div>
+
+<!-- ═══════ CONTEXT MENU ═══════ -->
+<div id="ctx-menu">
+  <div class="ctx-item" onclick="ctxAction('new')">🪟 New Window</div>
+  <div class="ctx-item" onclick="ctxAction('refresh')">↻ Refresh Desktop</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" onclick="ctxAction('wallpaper')">🖼 Change Wallpaper</div>
+  <div class="ctx-item" onclick="ctxAction('settings')">⚙ Settings</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" onclick="ctxAction('about')" style="color:var(--gold)">★ About JecksOS</div>
+</div>
+
+<!-- ═══════ SECURITY OVERLAY ═══════ -->
+<div id="security-overlay">
+  <div style="font-size:3rem">⚠️</div>
+  <div class="sec-warning">SECURITY ALERT</div>
+  <div class="sec-msg" id="sec-msg">Unauthorized access attempt detected.</div>
+  <button onclick="document.getElementById('security-overlay').style.display='none'"
+    style="padding:0.6rem 1.5rem;border:1px solid var(--red);background:transparent;color:var(--red);border-radius:6px;cursor:pointer;font-family:'Orbitron',monospace;font-size:0.7rem;letter-spacing:0.1em">
+    DISMISS
+  </button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  JecksOS KERNEL
+// ═══════════════════════════════════════════════
+
+// ── SECURITY ──
+// Password stored as hash (djb2). Default: jecks7
+// Change via Settings window
+const OS_PASS_KEY = 'jecksOS_passHash';
+const OS_SETTINGS_KEY = 'jecksOS_settings';
+
+function djb2Hash(s) {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h) ^ s.charCodeAt(i);
+  return (h >>> 0).toString(16);
+}
+
+function getPassHash() {
+  return localStorage.getItem(OS_PASS_KEY) || djb2Hash('jecks7');
+}
+
+// Anti-tamper: detect devtools open (basic indicator)
+let devtoolsOpen = false;
+const dtCheck = setInterval(() => {
+  const t = performance.now();
+  debugger;
+  if (performance.now() - t > 100) {
+    if (!devtoolsOpen) {
+      devtoolsOpen = true;
+      document.getElementById('sec-icon').textContent = '⚠️';
+      pushNotif('Security', 'Developer tools detected. Activity logged.', 'warn');
+    }
+  } else {
+    devtoolsOpen = false;
+    document.getElementById('sec-icon').textContent = '🔒';
+  }
+}, 3000);
+
+// Disable right-click outside OS context menu
+document.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  showCtxMenu(e.clientX, e.clientY);
+});
+
+// ── APP REGISTRY ──
+const APPS = [
+  { id:'prime',    name:'Prime Security',   icon:'🔐', sub:'512-bit RSA Engine',       file:'prime-security-suite.html',    w:820, h:580 },
+  { id:'soul',     name:'Soul Mirror',      icon:'✦',  sub:'Biblical Identity Engine', file:'soul-mirror.html',             w:860, h:600 },
+  { id:'games',    name:'Game Suite',       icon:'🎮', sub:'Archery & Brick Breaker',  file:'game-suite.html',              w:660, h:580 },
+  { id:'div7',     name:'Div Test of 7',   icon:'⬡',  sub:'Prime Encoder OS Module',  file:'divisibility-test-of-7.html',  w:900, h:600 },
+  { id:'comms',    name:'BEAST Comms',      icon:'💬', sub:'Communication + Payment',  file:'beast-os-comms.html',          w:820, h:580 },
+  { id:'settings', name:'Settings',         icon:'⚙',  sub:'JecksOS Configuration',    file:null,                           w:500, h:400 },
+  { id:'terminal', name:'Terminal',         icon:'⌨',  sub:'System Terminal',          file:null,                           w:560, h:380 },
+  { id:'about',    name:'About JecksOS',    icon:'★',  sub:'System Information',       file:null,                           w:460, h:360 },
+];
+
+// ── WINDOW MANAGER ──
+let windows = {};
+let zTop = 200;
+let activeWin = null;
+
+// ── OS STATE ──
+let osSettings = JSON.parse(localStorage.getItem(OS_SETTINGS_KEY) || '{"wallpaper":0,"sound":true}');
+
+// ═══════════════════════════════════════════════
+//  BOOT SEQUENCE
+// ═══════════════════════════════════════════════
+window.addEventListener('load', () => {
+  startBgCanvas();
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Boot → Login after ~3.8s
+  setTimeout(() => {
+    document.getElementById('boot-screen').style.display = 'none';
+    const ls = document.getElementById('login-screen');
+    ls.style.display = 'flex';
+    document.getElementById('login-pass').focus();
+  }, 3800);
+});
+
+// ═══════════════════════════════════════════════
+//  LOGIN
+// ═══════════════════════════════════════════════
+function loginOS() {
+  const pass = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-err');
+  if (!pass) { err.textContent = 'Enter your passcode.'; return; }
+
+  if (djb2Hash(pass) !== getPassHash()) {
+    err.textContent = 'Incorrect passcode. Access denied.';
+    document.getElementById('login-pass').value = '';
+    // Log failed attempt
+    const fails = parseInt(localStorage.getItem('jecksOS_fails') || '0') + 1;
+    localStorage.setItem('jecksOS_fails', fails);
+    if (fails >= 5) {
+      showSecurityAlert('Brute force attempt: ' + fails + ' failed logins recorded.');
+    }
+    return;
+  }
+
+  localStorage.setItem('jecksOS_fails', '0');
+  document.getElementById('login-screen').style.display = 'none';
+  launchDesktop();
+}
+
+function lockOS() {
+  closeStartMenu();
+  // Close all windows
+  Object.keys(windows).forEach(id => destroyWindow(id));
+  document.getElementById('desktop').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-pass').focus();
+}
+
+function shutdownOS() {
+  closeStartMenu();
+  document.getElementById('desktop').style.display = 'none';
+  document.getElementById('boot-screen').style.display = 'flex';
+  document.getElementById('boot-screen').style.flexDirection = 'column';
+  document.getElementById('boot-screen').innerHTML = `
+    <div style="font-family:'Orbitron',monospace;font-size:2rem;font-weight:900;color:var(--gold);letter-spacing:0.15em">JecksOS</div>
+    <div style="font-family:'Exo 2',sans-serif;font-size:0.8rem;color:var(--dim);letter-spacing:0.3em;margin-top:0.5rem">Shutting down safely...</div>
+    <div style="margin-top:2rem;font-family:'Orbitron',monospace;font-size:0.65rem;color:var(--dim);letter-spacing:0.2em">All sessions saved · Goodbye, Jeckstom</div>`;
+}
+
+// ═══════════════════════════════════════════════
+//  DESKTOP INIT
+// ═══════════════════════════════════════════════
+function launchDesktop() {
+  const desktop = document.getElementById('desktop');
+  desktop.style.display = 'flex';
+  buildIconGrid();
+  buildStartMenu();
+  pushNotif('JecksOS', 'Welcome back, Jeckstom. System secure.', 'info');
+}
+
+function buildIconGrid() {
+  const grid = document.getElementById('icon-grid');
+  grid.innerHTML = '';
+  APPS.forEach(app => {
+    const el = document.createElement('div');
+    el.className = 'desk-icon';
+    el.innerHTML = `<div class="icon-emoji">${app.icon}</div><div class="icon-label">${app.name}</div>`;
+    el.addEventListener('dblclick', () => openApp(app.id));
+    el.addEventListener('click', e => {
+      document.querySelectorAll('.desk-icon').forEach(d => d.classList.remove('selected'));
+      el.classList.add('selected');
+      e.stopPropagation();
+    });
+    grid.appendChild(el);
+  });
+}
+
+function buildStartMenu() {
+  const list = document.getElementById('start-apps-list');
+  list.innerHTML = '';
+  APPS.forEach(app => {
+    const el = document.createElement('div');
+    el.className = 'start-app';
+    el.innerHTML = `<span class="start-app-icon">${app.icon}</span><span>${app.name}</span>`;
+    el.addEventListener('click', () => { openApp(app.id); closeStartMenu(); });
+    list.appendChild(el);
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  WINDOW MANAGER
+// ═══════════════════════════════════════════════
+function openApp(id) {
+  // If already open, focus it
+  if (windows[id]) {
+    focusWindow(id);
+    if (windows[id].minimized) unminimizeWindow(id);
+    return;
+  }
+  const app = APPS.find(a => a.id === id);
+  if (!app) return;
+  createWindow(app);
+}
+
+function createWindow(app) {
+  const container = document.getElementById('windows-container');
+  const win = document.createElement('div');
+  win.className = 'os-window';
+  win.id = 'win-' + app.id;
+  win.style.pointerEvents = 'all';
+
+  // Position: stagger new windows
+  const offset = Object.keys(windows).length * 30;
+  const maxLeft = window.innerWidth - app.w - 40;
+  const maxTop = window.innerHeight - app.h - 80;
+  win.style.left = Math.min(80 + offset, maxLeft) + 'px';
+  win.style.top = Math.min(40 + offset, maxTop) + 'px';
+  win.style.width = app.w + 'px';
+  win.style.height = app.h + 'px';
+  win.style.zIndex = ++zTop;
+
+  // Build interior
+  win.innerHTML = `
+    <div class="win-titlebar" id="tb-${app.id}">
+      <div class="win-controls">
+        <button class="win-btn close" onclick="destroyWindow('${app.id}')"></button>
+        <button class="win-btn min" onclick="minimizeWindow('${app.id}')"></button>
+        <button class="win-btn max" onclick="toggleMaximize('${app.id}')"></button>
+      </div>
+      <div class="win-title"><span class="win-icon">${app.icon}</span>  ${app.name}</div>
+      <div style="width:54px"></div>
+    </div>
+    <div class="win-body" id="body-${app.id}">
+      ${app.file
+        ? `<div class="win-loading" id="loading-${app.id}">
+             <div class="win-loading-spinner"></div>
+             <div class="win-loading-text">Loading ${app.name}...</div>
+           </div>
+           <iframe src="${app.file}" id="iframe-${app.id}"
+             style="opacity:0;transition:opacity 0.3s"
+             onload="iframeLoaded('${app.id}')"></iframe>`
+        : `<div id="builtin-${app.id}" style="height:100%;overflow-y:auto;padding:1.2rem"></div>`
+      }
+    </div>
+    <div class="win-resize" id="resize-${app.id}"></div>`;
+
+  container.appendChild(win);
+  windows[app.id] = { el: win, minimized: false, maximized: false, app };
+
+  // Built-in apps (no iframe)
+  if (!app.file) renderBuiltin(app.id);
+
+  makeDraggable(win, document.getElementById('tb-' + app.id));
+  makeResizable(win, document.getElementById('resize-' + app.id));
+  win.addEventListener('mousedown', () => focusWindow(app.id));
+
+  addTaskbarBtn(app);
+  focusWindow(app.id);
+}
+
+function iframeLoaded(id) {
+  const loading = document.getElementById('loading-' + id);
+  const iframe = document.getElementById('iframe-' + id);
+  if (loading) loading.remove();
+  if (iframe) iframe.style.opacity = '1';
+}
+
+function focusWindow(id) {
+  if (activeWin) {
+    const prev = document.getElementById('win-' + activeWin);
+    if (prev) prev.classList.remove('focused');
+  }
+  const win = document.getElementById('win-' + id);
+  if (win) {
+    win.style.zIndex = ++zTop;
+    win.classList.add('focused');
+  }
+  activeWin = id;
+  updateTaskbarActive(id);
+}
+
+function minimizeWindow(id) {
+  const win = document.getElementById('win-' + id);
+  if (win) win.classList.add('minimized');
+  windows[id].minimized = true;
+  updateTaskbarActive(null);
+}
+
+function unminimizeWindow(id) {
+  const win = document.getElementById('win-' + id);
+  if (win) win.classList.remove('minimized');
+  windows[id].minimized = false;
+  focusWindow(id);
+}
+
+function toggleMaximize(id) {
+  const win = document.getElementById('win-' + id);
+  if (!win) return;
+  if (windows[id].maximized) {
+    win.classList.remove('maximized');
+    win.style.left = windows[id]._prev.left;
+    win.style.top = windows[id]._prev.top;
+    win.style.width = windows[id]._prev.w;
+    win.style.height = windows[id]._prev.h;
+    windows[id].maximized = false;
+  } else {
+    windows[id]._prev = { left: win.style.left, top: win.style.top, w: win.style.width, h: win.style.height };
+    win.classList.add('maximized');
+    windows[id].maximized = true;
+  }
+}
+
+function destroyWindow(id) {
+  const win = document.getElementById('win-' + id);
+  if (win) win.remove();
+  delete windows[id];
+  removeTaskbarBtn(id);
+  if (activeWin === id) activeWin = null;
+}
+
+// ── TASKBAR ──
+function addTaskbarBtn(app) {
+  const bar = document.getElementById('taskbar-apps');
+  const btn = document.createElement('div');
+  btn.className = 'tb-app open';
+  btn.id = 'tbapp-' + app.id;
+  btn.innerHTML = `${app.icon} ${app.name}`;
+  btn.addEventListener('click', () => {
+    if (windows[app.id]?.minimized) unminimizeWindow(app.id);
+    else if (activeWin === app.id) minimizeWindow(app.id);
+    else focusWindow(app.id);
+  });
+  bar.appendChild(btn);
+}
+
+function removeTaskbarBtn(id) {
+  document.getElementById('tbapp-' + id)?.remove();
+}
+
+function updateTaskbarActive(id) {
+  document.querySelectorAll('.tb-app').forEach(b => b.style.opacity = '0.7');
+  if (id) {
+    const btn = document.getElementById('tbapp-' + id);
+    if (btn) btn.style.opacity = '1';
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  DRAG & RESIZE
+// ═══════════════════════════════════════════════
+function makeDraggable(win, handle) {
+  let dragging = false, ox = 0, oy = 0;
+  handle.addEventListener('mousedown', e => {
+    if (e.target.classList.contains('win-btn')) return;
+    dragging = true;
+    ox = e.clientX - win.offsetLeft;
+    oy = e.clientY - win.offsetTop;
+    document.body.style.cursor = 'move';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    let nx = e.clientX - ox;
+    let ny = e.clientY - oy;
+    nx = Math.max(0, Math.min(window.innerWidth - win.offsetWidth, nx));
+    ny = Math.max(0, Math.min(window.innerHeight - win.offsetHeight - 48, ny));
+    win.style.left = nx + 'px';
+    win.style.top  = ny + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    dragging = false;
+    document.body.style.cursor = '';
+  });
+}
+
+function makeResizable(win, handle) {
+  let resizing = false, startX, startY, startW, startH;
+  handle.addEventListener('mousedown', e => {
+    resizing = true;
+    startX = e.clientX; startY = e.clientY;
+    startW = win.offsetWidth; startH = win.offsetHeight;
+    e.preventDefault(); e.stopPropagation();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!resizing) return;
+    const nw = Math.max(340, startW + e.clientX - startX);
+    const nh = Math.max(240, startH + e.clientY - startY);
+    win.style.width  = nw + 'px';
+    win.style.height = nh + 'px';
+  });
+  document.addEventListener('mouseup', () => { resizing = false; });
+}
+
+// ═══════════════════════════════════════════════
+//  BUILT-IN APPS (Settings, Terminal, About)
+// ═══════════════════════════════════════════════
+function renderBuiltin(id) {
+  const el = document.getElementById('builtin-' + id);
+  if (!el) return;
+  if (id === 'settings') renderSettings(el);
+  else if (id === 'terminal') renderTerminal(el);
+  else if (id === 'about') renderAbout(el);
+}
+
+function renderSettings(el) {
+  el.innerHTML = `
+  <div style="font-family:'Orbitron',monospace;font-size:0.7rem;color:var(--gold);letter-spacing:0.18em;margin-bottom:1.2rem">⚙ SYSTEM SETTINGS</div>
+
+  <div style="margin-bottom:1.2rem;padding:1rem;background:rgba(0,0,0,0.3);border-radius:8px;border:1px solid var(--border)">
+    <div style="font-size:0.72rem;font-weight:700;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.8rem">Security</div>
+    <div style="font-size:0.82rem;margin-bottom:0.5rem">Change OS Passcode</div>
+    <input id="s-old" type="password" placeholder="Current passcode" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid var(--border);color:var(--text);padding:0.5rem 0.7rem;border-radius:6px;margin-bottom:0.4rem;font-family:'Rajdhani',sans-serif;font-size:0.9rem;outline:none"/>
+    <input id="s-new" type="password" placeholder="New passcode" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid var(--border);color:var(--text);padding:0.5rem 0.7rem;border-radius:6px;margin-bottom:0.4rem;font-family:'Rajdhani',sans-serif;font-size:0.9rem;outline:none"/>
+    <input id="s-new2" type="password" placeholder="Confirm new passcode" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid var(--border);color:var(--text);padding:0.5rem 0.7rem;border-radius:6px;margin-bottom:0.6rem;font-family:'Rajdhani',sans-serif;font-size:0.9rem;outline:none"/>
+    <button onclick="changePass()" style="padding:0.5rem 1.2rem;background:var(--cyan);color:#000;border:none;border-radius:6px;cursor:pointer;font-family:'Orbitron',monospace;font-size:0.65rem;font-weight:700;letter-spacing:0.1em">UPDATE PASSCODE</button>
+    <div id="s-msg" style="font-size:0.75rem;margin-top:0.5rem;min-height:1.2em"></div>
+  </div>
+
+  <div style="padding:1rem;background:rgba(0,0,0,0.3);border-radius:8px;border:1px solid var(--border)">
+    <div style="font-size:0.72rem;font-weight:700;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.8rem">Appearance</div>
+    <div style="font-size:0.82rem;margin-bottom:0.5rem">Wallpaper</div>
+    <div style="display:flex;gap:0.5rem">
+      ${[0,1,2].map(i=>`<div onclick="setWallpaper(${i})" style="width:60px;height:40px;border-radius:6px;cursor:pointer;border:2px solid ${osSettings.wallpaper===i?'var(--cyan)':'var(--border)'};background:${['rgba(0,80,180,0.4)','rgba(0,100,60,0.4)','rgba(80,0,160,0.4)'][i]}"></div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function changePass() {
+  const old = document.getElementById('s-old').value;
+  const nw = document.getElementById('s-new').value;
+  const nw2 = document.getElementById('s-new2').value;
+  const msg = document.getElementById('s-msg');
+  if (djb2Hash(old) !== getPassHash()) { msg.style.color='var(--red)'; msg.textContent='Incorrect current passcode.'; return; }
+  if (nw !== nw2) { msg.style.color='var(--red)'; msg.textContent='New passcodes do not match.'; return; }
+  if (nw.length < 4) { msg.style.color='var(--red)'; msg.textContent='Passcode too short (min 4 chars).'; return; }
+  localStorage.setItem(OS_PASS_KEY, djb2Hash(nw));
+  msg.style.color='var(--green)'; msg.textContent='✓ Passcode updated.';
+}
+
+function setWallpaper(i) {
+  osSettings.wallpaper = i;
+  localStorage.setItem(OS_SETTINGS_KEY, JSON.stringify(osSettings));
+  const classes = ['wallpaper-1','wallpaper-2','wallpaper-3'];
+  document.getElementById('os-bg').className = classes[i] || '';
+  renderSettings(document.getElementById('builtin-settings'));
+}
+
+// ── TERMINAL ──
+let termHistory = [], termIdx = -1;
+const TERM_COMMANDS = {
+  help: () => `Available commands:\n  ls        — list apps\n  open [id] — open an app\n  clear     — clear terminal\n  whoami    — current user\n  ver       — OS version\n  lock      — lock OS\n  date      — current date/time\n  uptime    — session info`,
+  ls: () => APPS.map(a => `  ${a.icon} ${a.id.padEnd(12)} ${a.name}`).join('\n'),
+  whoami: () => 'jeckstom · Administrator · JecksOS v1.0',
+  ver: () => 'JecksOS v1.0.0 · BEAST Engine · Built with ♦ by Jeckstom',
+  date: () => new Date().toString(),
+  uptime: () => `Session active · ${Object.keys(windows).length} window(s) open · ${APPS.length} apps installed`,
+  clear: () => '__CLEAR__',
+  lock: () => { setTimeout(lockOS, 300); return 'Locking...'; },
+};
+
+function renderTerminal(el) {
+  el.style.padding = '0';
+  el.innerHTML = `
+  <div style="background:#000;height:100%;display:flex;flex-direction:column;font-family:'JetBrains Mono',monospace;font-size:12px;">
+    <div style="padding:0.4rem 0.8rem;border-bottom:1px solid #111;color:#00ff41;font-size:10px;letter-spacing:0.15em">
+      JecksOS Terminal · jeckstom@beast
+    </div>
+    <div id="term-out" style="flex:1;overflow-y:auto;padding:0.6rem 0.8rem;color:#00ff41;line-height:1.7;"></div>
+    <div style="display:flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;border-top:1px solid #111">
+      <span style="color:#00ff41;font-size:11px">jeckstom@beast:~$</span>
+      <input id="term-input" type="text" autocomplete="off"
+        style="flex:1;background:transparent;border:none;color:#00ff41;font-family:'JetBrains Mono',monospace;font-size:12px;outline:none;"
+        onkeydown="termKey(event)" placeholder="type help"/>
+    </div>
+  </div>`;
+  termPrint('JecksOS Terminal v1.0 — type <span style="color:#ffb000">help</span> for commands');
+  setTimeout(() => document.getElementById('term-input')?.focus(), 100);
+}
+
+function termPrint(line) {
+  const out = document.getElementById('term-out');
+  if (!out) return;
+  const d = document.createElement('div');
+  d.innerHTML = line;
+  out.appendChild(d);
+  out.scrollTop = out.scrollHeight;
+}
+
+function termKey(e) {
+  const inp = e.target;
+  if (e.key === 'Enter') {
+    const cmd = inp.value.trim();
+    if (!cmd) return;
+    termPrint(`<span style="color:#64748b">$</span> ${cmd}`);
+    termHistory.unshift(cmd); termIdx = -1;
+    inp.value = '';
+    const parts = cmd.split(' ');
+    const fn = TERM_COMMANDS[parts[0]];
+    if (fn) {
+      const out = fn(parts.slice(1).join(' '));
+      if (out === '__CLEAR__') document.getElementById('term-out').innerHTML = '';
+      else if (out) out.split('\n').forEach(l => termPrint(l));
+    } else if (parts[0] === 'open') {
+      const id = parts[1];
+      if (id && APPS.find(a => a.id === id)) { openApp(id); termPrint(`Opening ${id}...`); }
+      else termPrint(`<span style="color:#ff3c3c">App not found: ${parts[1] || '(no id given)'}</span>`);
+    } else {
+      termPrint(`<span style="color:#ff3c3c">Unknown command: ${parts[0]}</span>`);
+    }
+  } else if (e.key === 'ArrowUp') {
+    termIdx = Math.min(termIdx + 1, termHistory.length - 1);
+    inp.value = termHistory[termIdx] || '';
+  } else if (e.key === 'ArrowDown') {
+    termIdx = Math.max(termIdx - 1, -1);
+    inp.value = termIdx >= 0 ? termHistory[termIdx] : '';
+  }
+}
+
+// ── ABOUT ──
+function renderAbout(el) {
+  el.innerHTML = `
+  <div style="text-align:center;padding:1rem 0">
+    <div style="font-family:'Orbitron',monospace;font-size:2rem;font-weight:900;color:var(--gold);text-shadow:0 0 20px var(--gold-glow);letter-spacing:0.1em">JecksOS</div>
+    <div style="font-size:0.75rem;color:var(--dim);letter-spacing:0.3em;margin-top:0.3rem;text-transform:uppercase">Powered by BEAST Engine</div>
+    <div style="margin:1.5rem 0;width:60px;height:1px;background:var(--border);margin-left:auto;margin-right:auto"></div>
+    <div style="font-size:0.85rem;line-height:2;color:var(--text)">
+      Version 1.0.0<br>
+      Architecture: BEAST · 512-bit<br>
+      Kernel: JecksOS/Prime7<br>
+      Build: ${new Date().toLocaleDateString()}<br>
+      Owner: Jeckstom
+    </div>
+    <div style="margin:1.5rem 0;width:60px;height:1px;background:var(--border);margin-left:auto;margin-right:auto"></div>
+    <div style="font-size:0.75rem;color:var(--dim);line-height:1.8">
+      Modules installed: ${APPS.length}<br>
+      Prime Security Suite · Soul Mirror<br>
+      Game Suite · Divisibility Test of 7<br>
+      BEAST Comms · Terminal · Settings
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════
+//  MENUS & NOTIFICATIONS
+// ═══════════════════════════════════════════════
+function toggleStartMenu() {
+  const m = document.getElementById('start-menu');
+  m.style.display = m.style.display === 'block' ? 'none' : 'block';
+}
+function closeStartMenu() {
+  document.getElementById('start-menu').style.display = 'none';
+}
+
+function showCtxMenu(x, y) {
+  const m = document.getElementById('ctx-menu');
+  m.style.display = 'block';
+  m.style.left = Math.min(x, window.innerWidth - 200) + 'px';
+  m.style.top  = Math.min(y, window.innerHeight - 180) + 'px';
+}
+function hideCtxMenu() {
+  document.getElementById('ctx-menu').style.display = 'none';
+}
+
+function ctxAction(action) {
+  hideCtxMenu();
+  if (action === 'settings') openApp('settings');
+  else if (action === 'about') openApp('about');
+  else if (action === 'wallpaper') { openApp('settings'); }
+  else if (action === 'refresh') {
+    pushNotif('Desktop', 'Desktop refreshed.', 'info');
+    buildIconGrid();
+  }
+}
+
+function showSettings() { openApp('settings'); closeStartMenu(); }
+
+document.addEventListener('click', e => {
+  hideCtxMenu();
+  if (!e.target.closest('#start-menu') && !e.target.closest('.taskbar-start')) closeStartMenu();
+  if (!e.target.closest('.desk-icon')) document.querySelectorAll('.desk-icon').forEach(d => d.classList.remove('selected'));
+});
+
+// Notifications
+let notifQueue = [];
+function pushNotif(title, msg, type = 'info') {
+  const n = document.createElement('div');
+  n.className = 'os-notif' + (type === 'warn' ? ' warn' : type === 'err' ? ' err' : '');
+  n.innerHTML = `<div class="notif-icon">${type==='warn'?'⚠️':type==='err'?'🚨':'💠'}</div>
+    <div class="notif-content"><div class="notif-title">${title}</div><div class="notif-msg">${msg}</div></div>`;
+  n.style.cssText += `top:${1 + notifQueue.length * 5.5}rem`;
+  document.body.appendChild(n);
+  notifQueue.push(n);
+  setTimeout(() => {
+    n.style.opacity = '0'; n.style.transform = 'translateX(110%)'; n.style.transition = 'all 0.4s';
+    setTimeout(() => { n.remove(); notifQueue = notifQueue.filter(x => x !== n); }, 400);
+  }, 4000);
+}
+
+function showSecurityAlert(msg) {
+  document.getElementById('sec-msg').textContent = msg;
+  document.getElementById('security-overlay').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════
+//  CLOCK
+// ═══════════════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  const t = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const d = now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+  document.getElementById('tb-time').textContent = t;
+  document.getElementById('tb-date').textContent = d;
+  document.getElementById('login-time').textContent = t;
+  document.getElementById('login-date').textContent = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+// ═══════════════════════════════════════════════
+//  BACKGROUND PARTICLE CANVAS
+// ═══════════════════════════════════════════════
+function startBgCanvas() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Create particles
+  for (let i = 0; i < 80; i++) {
+    particles.push({
+      x: Math.random() * W, y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25,
+      r: Math.random() * 1.2 + 0.3,
+      color: Math.random() > 0.7 ? '#c8a84b' : '#00d4ff',
+      opacity: Math.random() * 0.5 + 0.1,
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+      if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.opacity;
+      ctx.fill();
+    });
+
+    // Draw subtle connection lines
+    ctx.globalAlpha = 0.04;
+    ctx.strokeStyle = '#00d4ff';
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// Keyboard shortcut: Ctrl+L = lock
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'l') { e.preventDefault(); lockOS(); }
+  if (e.key === 'Escape') { hideCtxMenu(); closeStartMenu(); }
+});
+</script>
+</body>
+</html>
