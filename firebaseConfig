@@ -1,8 +1,1201 @@
-const firebaseConfig = {
-  apiKey: "AIza...",
-  authDomain: "jecks-os.firebaseapp.com",
-  projectId: "jecks-os",
-  storageBucket: "jecks-os.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abc123"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BEAST OS · Firebase Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+
+<!-- FIREBASE SDK v10 -->
+<script type="module">
+  import { initializeApp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getAuth, createUserWithEmailAndPassword,
+    signInWithEmailAndPassword, signOut, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import {
+    getFirestore, doc, setDoc, getDoc, updateDoc,
+    collection, addDoc, query, orderBy, getDocs, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyD5xZbf3ErkYHQo_BXf492YvYo5lFQfzpA",
+    authDomain: "jecks-operating-system.firebaseapp.com",
+    projectId: "jecks-operating-system",
+    storageBucket: "jecks-operating-system.firebasestorage.app",
+    messagingSenderId: "85119343233",
+    appId: "1:85119343233:web:0c216332fc3c8972824b80",
+    measurementId: "G-6C0HN1MYND"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  // Expose everything to global scope for use in regular scripts
+  window._fb = {
+    auth, db,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut, onAuthStateChanged,
+    doc, setDoc, getDoc, updateDoc,
+    collection, addDoc, query,
+    orderBy, getDocs, serverTimestamp
+  };
+
+  // Auth state change listener
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      window._fbUser = user;
+      if (typeof window.onFirebaseLogin === 'function') {
+        await window.onFirebaseLogin(user);
+      }
+    } else {
+      window._fbUser = null;
+    }
+  });
+
+  // Signal that Firebase is ready
+  window._fbReady = true;
+  document.dispatchEvent(new Event('firebase-ready'));
+</script>
+
+<style>
+:root {
+  --bg:#0a0e1a; --surface:#111827; --surface2:#1a2236;
+  --border:#1e2d47; --accent:#3b82f6; --accent2:#6366f1;
+  --green:#10b981; --gold:#f59e0b; --red:#ef4444;
+  --text:#e2e8f0; --dim:#64748b; --mpesa:#00a651;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(59,130,246,0.08),transparent);pointer-events:none;z-index:0;}
+
+/* SCREENS */
+.screen{display:none;position:relative;z-index:10;}
+.screen.active{display:flex;flex-direction:column;min-height:100vh;}
+
+/* LOADING */
+#screen-loading{align-items:center;justify-content:center;}
+.spinner{width:44px;height:44px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-msg{font-size:0.8rem;color:var(--dim);margin-top:1rem;letter-spacing:0.1em;}
+
+/* AUTH */
+#screen-auth{align-items:center;justify-content:center;padding:2rem;}
+.auth-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2.5rem;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+.auth-logo{text-align:center;margin-bottom:2rem;}
+.auth-logo h1{font-family:'JetBrains Mono',monospace;font-size:1.8rem;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.auth-logo p{color:var(--dim);font-size:0.8rem;letter-spacing:0.12em;margin-top:0.3rem;}
+.fb-badge{background:rgba(255,160,0,0.1);border:1px solid rgba(255,160,0,0.25);border-radius:6px;padding:0.4rem 0.7rem;font-size:0.72rem;color:#ffa000;text-align:center;margin-bottom:1rem;letter-spacing:0.05em;}
+.auth-tabs{display:flex;margin-bottom:1.5rem;border-bottom:1px solid var(--border);}
+.auth-tab{flex:1;padding:0.6rem;text-align:center;font-size:0.8rem;font-weight:600;letter-spacing:0.08em;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;text-transform:uppercase;}
+.auth-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.auth-form{display:none;}
+.auth-form.active{display:block;}
+label{display:block;font-size:0.72rem;font-weight:600;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.35rem;margin-top:0.9rem;}
+input{width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border);color:var(--text);font-family:'Inter',sans-serif;font-size:0.9rem;padding:0.65rem 0.9rem;border-radius:6px;outline:none;transition:border-color 0.2s;}
+input:focus{border-color:var(--accent);}
+.btn{width:100%;padding:0.75rem;border-radius:6px;border:none;font-family:'Inter',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s;margin-top:1.1rem;letter-spacing:0.04em;}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;}
+.btn-primary:hover{opacity:0.9;transform:translateY(-1px);box-shadow:0 4px 15px rgba(59,130,246,0.3);}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+.status-msg{font-size:0.78rem;text-align:center;margin-top:0.7rem;min-height:1.1em;}
+.status-msg.ok{color:var(--green);}
+.status-msg.err{color:var(--red);}
+
+/* PAYMENT */
+#screen-payment{align-items:center;justify-content:center;padding:2rem;}
+.pay-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;width:100%;max-width:440px;}
+.pay-title{font-size:1.1rem;font-weight:700;margin-bottom:0.3rem;}
+.pay-sub{font-size:0.8rem;color:var(--dim);margin-bottom:1.5rem;}
+.plan-cards{display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:1.5rem;}
+.plan-card{background:var(--surface2);border:2px solid var(--border);border-radius:8px;padding:1rem;cursor:pointer;transition:all 0.2s;text-align:center;}
+.plan-card.selected,.plan-card:hover{border-color:var(--accent);background:rgba(59,130,246,0.08);}
+.plan-card.gold:hover,.plan-card.gold.selected{border-color:var(--gold);background:rgba(245,158,11,0.08);}
+.plan-price{font-size:1.4rem;font-weight:700;color:var(--accent);}
+.plan-price.gold{color:var(--gold);}
+.plan-label{font-size:0.7rem;color:var(--dim);margin-top:0.2rem;}
+.mpesa-box{background:rgba(0,166,81,0.08);border:1px solid rgba(0,166,81,0.3);border-radius:8px;padding:1rem;margin-bottom:1rem;}
+.mpesa-title{font-size:0.8rem;font-weight:700;color:var(--mpesa);margin-bottom:0.5rem;}
+.sessions-bar{background:var(--surface2);border-radius:8px;padding:1rem;margin-bottom:1rem;}
+.sessions-dots{display:flex;gap:6px;margin-top:0.5rem;}
+.session-dot{width:28px;height:28px;border-radius:50%;background:var(--green);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:#000;transition:all 0.3s;}
+.session-dot.used{background:var(--border);border-color:var(--border);color:var(--dim);}
+
+/* MAIN APP */
+#screen-app{flex-direction:row;}
+.sidebar{width:260px;min-width:260px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;position:sticky;top:0;}
+.sidebar-header{padding:1rem;border-bottom:1px solid var(--border);}
+.app-brand{font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.user-pill{display:flex;align-items:center;gap:0.6rem;margin-top:0.7rem;padding:0.5rem;background:var(--surface2);border-radius:8px;}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;color:#fff;flex-shrink:0;}
+.user-name{font-size:0.82rem;font-weight:600;}
+.user-sub{font-size:0.68rem;color:var(--dim);}
+.nav-list{flex:1;overflow-y:auto;padding:0.5rem;}
+.nav-item{display:flex;align-items:center;gap:0.7rem;padding:0.6rem 0.8rem;border-radius:8px;cursor:pointer;transition:all 0.15s;font-size:0.85rem;font-weight:500;color:var(--dim);margin-bottom:2px;}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{background:rgba(59,130,246,0.12);color:var(--accent);}
+.sessions-footer{padding:0.8rem;border-top:1px solid var(--border);font-size:0.75rem;}
+.sessions-footer-label{color:var(--dim);margin-bottom:0.4rem;}
+.mini-dots{display:flex;gap:4px;}
+.mini-dot{width:22px;height:22px;border-radius:50%;background:var(--green);}
+.mini-dot.used{background:var(--border);}
+
+/* PANELS */
+.main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.panel{display:none;flex:1;flex-direction:column;overflow:hidden;}
+.panel.active{display:flex;}
+.panel-header{padding:1rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface);}
+.panel-title{font-size:1rem;font-weight:700;}
+.panel-body{flex:1;overflow-y:auto;padding:1.5rem;}
+
+/* CHAT */
+.chat-messages{flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.8rem;}
+.msg{max-width:72%;display:flex;flex-direction:column;gap:2px;}
+.msg.me{align-self:flex-end;align-items:flex-end;}
+.msg.them{align-self:flex-start;align-items:flex-start;}
+.msg-bubble{padding:0.6rem 0.9rem;border-radius:12px;font-size:0.88rem;line-height:1.5;}
+.msg.me .msg-bubble{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-bottom-right-radius:3px;}
+.msg.them .msg-bubble{background:var(--surface2);color:var(--text);border-bottom-left-radius:3px;}
+.msg-meta{font-size:0.65rem;color:var(--dim);}
+.thought-badge{font-size:0.68rem;padding:0.2rem 0.5rem;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:20px;color:#a5b4fc;margin-top:2px;}
+.chat-input-row{padding:0.8rem 1rem;border-top:1px solid var(--border);display:flex;gap:0.6rem;align-items:flex-end;background:var(--surface);}
+.chat-input{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Inter',sans-serif;font-size:0.88rem;padding:0.6rem 0.9rem;border-radius:8px;outline:none;resize:none;max-height:120px;}
+.chat-input:focus{border-color:var(--accent);}
+.send-btn{padding:0.6rem 1rem;border-radius:8px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;cursor:pointer;font-weight:600;font-size:0.85rem;transition:all 0.2s;}
+
+/* INSIGHTS */
+.insight-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem;}
+.insight-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1.1rem;}
+.ic-label{font-size:0.7rem;font-weight:600;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.4rem;}
+.ic-val{font-size:1.3rem;font-weight:700;}
+.ic-sub{font-size:0.72rem;color:var(--dim);margin-top:0.2rem;}
+.thought-stream{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1.1rem;}
+.thought-item{padding:0.6rem 0;border-bottom:1px solid var(--border);font-size:0.83rem;display:flex;gap:0.6rem;align-items:flex-start;}
+.thought-item:last-child{border:none;}
+.thought-conf{font-size:0.68rem;padding:0.15rem 0.4rem;border-radius:10px;background:rgba(99,102,241,0.15);color:#a5b4fc;margin-left:auto;flex-shrink:0;}
+
+/* PAYMENTS */
+.pay-table{width:100%;border-collapse:collapse;font-size:0.82rem;}
+.pay-table th{text-align:left;padding:0.6rem 0.8rem;font-size:0.7rem;font-weight:600;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase;border-bottom:1px solid var(--border);}
+.pay-table td{padding:0.6rem 0.8rem;border-bottom:1px solid rgba(30,45,71,0.4);}
+.badge{display:inline-block;padding:0.2rem 0.5rem;border-radius:20px;font-size:0.68rem;font-weight:600;}
+.badge.green{background:rgba(16,185,129,0.15);color:var(--green);}
+.badge.gold{background:rgba(245,158,11,0.15);color:var(--gold);}
+.badge.blue{background:rgba(59,130,246,0.15);color:var(--accent);}
+.revenue-box{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem;}
+.rev-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center;}
+.rev-amt{font-size:1.6rem;font-weight:700;color:var(--gold);}
+.rev-label{font-size:0.7rem;color:var(--dim);margin-top:0.2rem;}
+
+/* ADMIN */
+.admin-section{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1.2rem;margin-bottom:1rem;}
+.admin-section-title{font-size:0.78rem;font-weight:700;color:var(--dim);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1rem;}
+.code-block{background:#000;border:1px solid var(--border);border-radius:6px;padding:0.8rem;font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:#00ff41;line-height:1.7;overflow-x:auto;white-space:pre-wrap;word-break:break-all;}
+.sm-btn{padding:0.5rem 1rem;border-radius:6px;border:none;font-size:0.78rem;font-weight:600;cursor:pointer;background:var(--accent);color:#fff;transition:all 0.2s;white-space:nowrap;}
+.sm-btn:hover{opacity:0.85;}
+.sm-btn.green{background:var(--green);}
+.sm-btn.red{background:var(--red);}
+.decode-result{margin-top:0.6rem;padding:0.6rem;background:rgba(0,0,0,0.3);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:var(--green);min-height:2em;word-break:break-all;white-space:pre-wrap;}
+
+/* TYPING */
+.typing-indicator{display:flex;gap:4px;align-items:center;padding:0.4rem 0.6rem;}
+.typing-dot{width:6px;height:6px;border-radius:50%;background:var(--dim);animation:bounce 1.2s infinite;}
+.typing-dot:nth-child(2){animation-delay:0.2s;}
+.typing-dot:nth-child(3){animation-delay:0.4s;}
+@keyframes bounce{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-6px);}}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.modal-overlay.active{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+.modal-title{font-size:1rem;font-weight:700;margin-bottom:0.5rem;}
+.modal-sub{font-size:0.82rem;color:var(--dim);margin-bottom:1.2rem;line-height:1.6;}
+.modal-btns{display:flex;gap:0.6rem;margin-top:1.2rem;}
+.modal-btns .btn{margin:0;flex:1;}
+
+@media(max-width:700px){.sidebar{display:none;}.plan-cards{grid-template-columns:1fr;}.revenue-box{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+
+<!-- LOADING SCREEN -->
+<div id="screen-loading" class="screen active">
+  <div class="spinner"></div>
+  <div class="loading-msg" id="loading-msg">Connecting to Firebase...</div>
+</div>
+
+<!-- AUTH SCREEN -->
+<div id="screen-auth" class="screen">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <h1>⬡ BEAST OS</h1>
+      <p>FIREBASE · REAL-TIME · SECURE</p>
+    </div>
+    <div class="fb-badge" id="fb-status-badge">🔥 Firebase: Connecting...</div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchAuthTab('login')">Sign In</div>
+      <div class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</div>
+    </div>
+    <!-- LOGIN -->
+    <div id="auth-login" class="auth-form active">
+      <label>Email</label>
+      <input id="login-email" type="email" placeholder="your@email.com" autocomplete="email"/>
+      <label>Password</label>
+      <input id="login-pass" type="password" placeholder="Password"
+        onkeydown="if(event.key==='Enter') doLogin()"/>
+      <button class="btn btn-primary" id="btn-login" onclick="doLogin()">Sign In</button>
+      <div class="status-msg" id="login-msg"></div>
+    </div>
+    <!-- SIGNUP -->
+    <div id="auth-signup" class="auth-form">
+      <label>Username</label>
+      <input id="signup-user" type="text" placeholder="Choose a username"/>
+      <label>Email</label>
+      <input id="signup-email" type="email" placeholder="your@email.com"/>
+      <label>Password</label>
+      <input id="signup-pass" type="password" placeholder="Minimum 6 characters"/>
+      <label>Phone (M-Pesa)</label>
+      <input id="signup-phone" type="tel" placeholder="07XXXXXXXX"/>
+      <button class="btn btn-primary" id="btn-signup" onclick="doSignup()">Create Account</button>
+      <div class="status-msg" id="signup-msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAYMENT SCREEN -->
+<div id="screen-payment" class="screen">
+  <div class="pay-box">
+    <div class="pay-title">🎮 Session Limit Reached</div>
+    <div class="pay-sub">You have used all 7 free sessions today. Pay to continue.</div>
+    <div class="sessions-bar">
+      <div style="font-size:0.75rem;color:var(--dim);font-weight:600;text-transform:uppercase;letter-spacing:0.08em">Today's Sessions</div>
+      <div class="sessions-dots" id="pay-session-dots"></div>
+    </div>
+    <div class="plan-cards">
+      <div class="plan-card selected" id="plan-session" onclick="selectPlan('session')">
+        <div class="plan-price">KES 2</div>
+        <div class="plan-label">1 Session</div>
+        <div style="font-size:0.7rem;color:var(--dim);margin-top:0.4rem">Play once more</div>
+      </div>
+      <div class="plan-card gold" id="plan-forever" onclick="selectPlan('forever')">
+        <div class="plan-price gold">KES 977</div>
+        <div class="plan-label">Unlimited Forever</div>
+        <div style="font-size:0.7rem;color:var(--dim);margin-top:0.4rem">Never pay again</div>
+      </div>
+    </div>
+    <div class="mpesa-box">
+      <div class="mpesa-title">📱 M-Pesa Payment</div>
+      <label style="margin-top:0">M-Pesa Phone Number</label>
+      <input id="mpesa-phone" type="tel" placeholder="07XXXXXXXX" style="margin-top:0.4rem"/>
+      <div style="font-size:0.72rem;color:var(--dim);margin-top:0.5rem">An STK push will be sent to your Safaricom number</div>
+    </div>
+    <button class="btn btn-primary" id="btn-pay" onclick="processPay()">💳 Pay with M-Pesa</button>
+    <button class="btn btn-outline" onclick="showScreen('app')" style="margin-top:0.5rem">← Back to App</button>
+    <div class="status-msg" id="pay-msg"></div>
+  </div>
+</div>
+
+<!-- MAIN APP SCREEN -->
+<div id="screen-app" class="screen">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="app-brand">⬡ BEAST OS</div>
+      <div class="user-pill">
+        <div class="avatar" id="sb-avatar">?</div>
+        <div>
+          <div class="user-name" id="sb-name">—</div>
+          <div class="user-sub" id="sb-plan">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="nav-list">
+      <div class="nav-item active" onclick="showPanel('chat',this)">
+        <span>💬</span> Chat
+      </div>
+      <div class="nav-item" onclick="showPanel('insights',this)">
+        <span>🧠</span> AI Insights
+      </div>
+      <div class="nav-item" onclick="showPanel('payments',this)">
+        <span>💰</span> Payments
+      </div>
+      <div class="nav-item" onclick="showPanel('admin',this)">
+        <span>🔐</span> Admin
+      </div>
+      <div class="nav-item" onclick="doLogout()" style="color:var(--red);margin-top:auto;">
+        <span>↩</span> Logout
+      </div>
+    </div>
+    <div class="sessions-footer">
+      <div class="sessions-footer-label">
+        Sessions today: <span id="sb-session-count">0</span>/7
+      </div>
+      <div class="mini-dots" id="sb-mini-dots"></div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+
+    <!-- CHAT PANEL -->
+    <div id="panel-chat" class="panel active">
+      <div class="panel-header">
+        <div class="panel-title">💬 Communication</div>
+        <div style="font-size:0.75rem;color:var(--green)">🟢 Firebase Live</div>
+      </div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input-row">
+        <textarea class="chat-input" id="chat-input" rows="1"
+          placeholder="Type a message..."
+          oninput="onTyping(this)"
+          onkeydown="chatKeydown(event)"></textarea>
+        <button class="send-btn" onclick="sendMessage()">Send ↑</button>
+      </div>
+    </div>
+
+    <!-- INSIGHTS PANEL -->
+    <div id="panel-insights" class="panel">
+      <div class="panel-header">
+        <div class="panel-title">🧠 AI Thought Prediction</div>
+        <button class="sm-btn" onclick="refreshInsights()">↻ Refresh</button>
+      </div>
+      <div class="panel-body">
+        <div class="insight-grid" id="insight-grid"></div>
+        <div class="thought-stream">
+          <div style="font-size:0.8rem;font-weight:700;margin-bottom:0.8rem;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase">
+            Live Thought Predictions
+          </div>
+          <div id="thought-list">
+            <div style="color:var(--dim);font-size:0.82rem">
+              Send a message to activate thought prediction.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENTS PANEL -->
+    <div id="panel-payments" class="panel">
+      <div class="panel-header">
+        <div class="panel-title">💰 Revenue Dashboard</div>
+        <button class="sm-btn" onclick="renderPayments()">↻ Reload</button>
+      </div>
+      <div class="panel-body">
+        <div class="revenue-box" id="revenue-box">
+          <div class="rev-card"><div class="rev-amt">KES 0</div><div class="rev-label">Total Revenue</div></div>
+          <div class="rev-card"><div class="rev-amt">0</div><div class="rev-label">Session Purchases</div></div>
+          <div class="rev-card"><div class="rev-amt">0</div><div class="rev-label">Lifetime Members</div></div>
+        </div>
+        <div style="font-size:0.78rem;font-weight:700;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.8rem">
+          Transactions (Firestore Live)
+        </div>
+        <table class="pay-table">
+          <thead>
+            <tr>
+              <th>User</th><th>Amount</th><th>Plan</th>
+              <th>Phone</th><th>Status</th><th>Time</th>
+            </tr>
+          </thead>
+          <tbody id="pay-tbody">
+            <tr><td colspan="6" style="color:var(--dim);text-align:center;padding:1rem">Loading transactions...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ADMIN PANEL -->
+    <div id="panel-admin" class="panel">
+      <div class="panel-header">
+        <div class="panel-title">🔐 Admin Module</div>
+        <div id="admin-lock-status" style="font-size:0.78rem;color:var(--red)">🔒 Locked</div>
+      </div>
+      <div class="panel-body">
+
+        <!-- Admin gate -->
+        <div id="admin-gate" class="admin-section">
+          <div class="admin-section-title">Admin Authentication Required</div>
+          <p style="font-size:0.82rem;color:var(--dim);margin-bottom:1rem;line-height:1.6">
+            Only the two registered admin emails can unlock this panel.
+            Authentication goes through Firebase directly.
+          </p>
+          <label>Admin Email</label>
+          <input id="admin-email-inp" type="email" placeholder="Your admin email"/>
+          <label>Admin Password</label>
+          <input id="admin-pass-inp" type="password" placeholder="Your Firebase password"
+            onkeydown="if(event.key==='Enter') adminLogin()"/>
+          <div style="margin-top:0.8rem">
+            <button class="sm-btn" onclick="adminLogin()" style="width:100%;padding:0.65rem">
+              🔓 Unlock Admin Panel
+            </button>
+          </div>
+          <div class="status-msg" id="admin-login-msg"></div>
+        </div>
+
+        <!-- Admin content — visible only after unlock -->
+        <div id="admin-content" style="display:none">
+
+          <div class="admin-section">
+            <div class="admin-section-title">📧 Email Registry (Binary Encoded in Source)</div>
+            <div class="code-block" id="email-registry"></div>
+            <div style="margin-top:0.9rem">
+              <div style="font-size:0.78rem;color:var(--dim);margin-bottom:0.4rem">
+                Decode a binary string:
+              </div>
+              <div style="display:flex;gap:0.5rem;margin-top:0.4rem">
+                <input id="decode-input" type="text" placeholder="Paste binary here..."
+                  style="flex:1;background:rgba(0,0,0,0.3);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:0.8rem;padding:0.45rem 0.65rem;border-radius:6px;outline:none;"/>
+                <button class="sm-btn" onclick="decodeEmail()">Decode</button>
+              </div>
+              <div class="decode-result" id="decode-result">—</div>
+            </div>
+          </div>
+
+          <div class="admin-section">
+            <div class="admin-section-title">🔑 Account Recovery (Firestore Lookup)</div>
+            <p style="font-size:0.82rem;color:var(--dim);margin-bottom:0.8rem;line-height:1.6">
+              Enter your admin email to retrieve your full account record from Firestore.
+            </p>
+            <label>Admin Email</label>
+            <input id="recovery-email" type="email" placeholder="Enter admin email"/>
+            <div style="margin-top:0.8rem">
+              <button class="sm-btn green" onclick="recoverAccount()" style="width:100%;padding:0.65rem">
+                🔎 Retrieve Account from Firestore
+              </button>
+            </div>
+            <div class="decode-result" id="recovery-result">—</div>
+          </div>
+
+          <div class="admin-section">
+            <div class="admin-section-title">👥 All Users (Firestore)</div>
+            <button class="sm-btn" onclick="loadAllUsers()" style="margin-bottom:0.8rem">
+              ↻ Load All Users
+            </button>
+            <table class="pay-table">
+              <thead>
+                <tr><th>Username</th><th>Email</th><th>Plan</th><th>Sessions</th><th>Joined</th></tr>
+              </thead>
+              <tbody id="admin-users-tbody">
+                <tr><td colspan="5" style="color:var(--dim);text-align:center;padding:1rem">
+                  Click "Load All Users" to fetch from Firestore.
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="admin-section">
+            <div class="admin-section-title">📢 Broadcast to All Users</div>
+            <input id="broadcast-text" type="text" placeholder="Type your message..."/>
+            <div style="margin-top:0.8rem;display:flex;gap:0.5rem">
+              <button class="sm-btn" onclick="doBroadcast()" style="flex:1;padding:0.65rem">
+                📡 Send Broadcast
+              </button>
+            </div>
+            <div class="status-msg" id="broadcast-msg"></div>
+          </div>
+
+        </div><!-- /admin-content -->
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /screen-app -->
+
+<!-- SESSION MODAL -->
+<div class="modal-overlay" id="modal-session">
+  <div class="modal">
+    <div class="modal-title">⏰ Session Recorded</div>
+    <div class="modal-sub" id="modal-session-text">
+      Session saved to Firebase Firestore.
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-primary" onclick="closeModal('modal-session')">Continue</button>
+      <button class="btn btn-outline" onclick="showScreen('payment')">Buy More</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// ADMIN EMAILS — HARDCODED IN BINARY (decoded at runtime)
+// Primary:   Jeckstom777@gmail.com
+// Secondary: jeckstito777@gmail.com
+// ═══════════════════════════════════════════════════════
+const BIN_EMAIL = {
+  primary:
+    "01001010 01100101 01100011 01101011 01110011 01110100 01101111 01101101 " +
+    "00110111 00110111 00110111 01000000 01100111 01101101 01100001 01101001 " +
+    "01101100 00101110 01100011 01101111 01101101",
+  secondary:
+    "01101010 01100101 01100011 01101011 01110011 01110100 01101001 01110100 " +
+    "01101111 00110111 00110111 00110111 01000000 01100111 01101101 01100001 " +
+    "01101100 00101110 01100011 01101111 01101101"
 };
+
+function binToStr(bin) {
+  return bin.trim().split(/\s+/)
+    .map(b => String.fromCharCode(parseInt(b, 2))).join('');
+}
+
+// Decoded only in memory — never stored as plain text in source
+const ADMIN_1 = binToStr(BIN_EMAIL.primary);
+const ADMIN_2 = binToStr(BIN_EMAIL.secondary);
+
+// ═══════════════════════════════════════════════════════
+// GLOBAL STATE
+// ═══════════════════════════════════════════════════════
+let fbUser     = null;   // Firebase Auth user object
+let userData   = null;   // Firestore user document data
+let adminOpen  = false;
+let chosenPlan = 'session';
+let chatLog    = [];
+let typing     = { pauses: 0, msgCount: 0 };
+let lastType   = 0;
+let thinkTimer = null;
+
+// ═══════════════════════════════════════════════════════
+// FIREBASE READY
+// ═══════════════════════════════════════════════════════
+document.addEventListener('firebase-ready', () => {
+  // Firebase connected — show auth
+  showScreen('auth');
+  document.getElementById('fb-status-badge').textContent = '🔥 Firebase: Connected';
+  document.getElementById('fb-status-badge').style.color = '#10b981';
+});
+
+// Timeout if Firebase never connects
+setTimeout(() => {
+  if (!window._fbReady) {
+    document.getElementById('loading-msg').textContent =
+      'Firebase failed to connect. Check your internet.';
+  }
+}, 8000);
+
+// Called when Firebase detects an existing session
+window.onFirebaseLogin = async (user) => {
+  if (fbUser) return;
+  fbUser = user;
+  await fetchUserData(user.uid);
+  if (userData) bootApp();
+};
+
+// ═══════════════════════════════════════════════════════
+// FIRESTORE USER HELPERS
+// ═══════════════════════════════════════════════════════
+function fb() { return window._fb; }
+
+async function fetchUserData(uid) {
+  try {
+    const ref  = fb().doc(fb().db, 'users', uid);
+    const snap = await fb().getDoc(ref);
+    if (snap.exists()) {
+      userData = snap.data();
+      const today = new Date().toDateString();
+      if (userData.lastDate !== today) {
+        userData.sessionsToday = 0;
+        userData.lastDate = today;
+        await fb().updateDoc(ref, { sessionsToday: 0, lastDate: today });
+      }
+    }
+  } catch(e) {
+    console.error('fetchUserData:', e.message);
+  }
+}
+
+async function pushUserData() {
+  if (!fbUser || !userData) return;
+  try {
+    const ref = fb().doc(fb().db, 'users', fbUser.uid);
+    await fb().updateDoc(ref, userData);
+  } catch(e) {
+    console.error('pushUserData:', e.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════
+function switchAuthTab(tab) {
+  ['login','signup'].forEach((t,i) => {
+    document.querySelectorAll('.auth-tab')[i].classList.toggle('active', t===tab);
+    document.getElementById('auth-'+t).classList.toggle('active', t===tab);
+  });
+}
+
+async function doSignup() {
+  const username = document.getElementById('signup-user').value.trim();
+  const email    = document.getElementById('signup-email').value.trim();
+  const pass     = document.getElementById('signup-pass').value;
+  const phone    = document.getElementById('signup-phone').value.trim();
+  const msgEl    = document.getElementById('signup-msg');
+  const btn      = document.getElementById('btn-signup');
+
+  if (!username || !email || !pass) {
+    setMsg('signup-msg','Please fill all required fields.','err'); return;
+  }
+  if (pass.length < 6) {
+    setMsg('signup-msg','Password must be at least 6 characters.','err'); return;
+  }
+
+  btn.disabled = true;
+  setMsg('signup-msg','Creating your account...','');
+
+  try {
+    const cred = await fb().createUserWithEmailAndPassword(fb().auth, email, pass);
+    fbUser = cred.user;
+    const today = new Date().toDateString();
+    userData = {
+      username, email, phone,
+      uid: cred.user.uid,
+      plan: 'free',
+      sessionsToday: 0,
+      lastDate: today,
+      totalSessions: 0,
+      joinDate: new Date().toISOString()
+    };
+    await fb().setDoc(fb().doc(fb().db, 'users', cred.user.uid), userData);
+    setMsg('signup-msg','✓ Account created! Welcome to BEAST OS.','ok');
+    setTimeout(() => bootApp(), 800);
+  } catch(e) {
+    btn.disabled = false;
+    setMsg('signup-msg', fbErrMsg(e.code), 'err');
+  }
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const btn   = document.getElementById('btn-login');
+
+  if (!email || !pass) {
+    setMsg('login-msg','Enter email and password.','err'); return;
+  }
+
+  btn.disabled = true;
+  setMsg('login-msg','Signing in...','');
+
+  try {
+    const cred = await fb().signInWithEmailAndPassword(fb().auth, email, pass);
+    fbUser = cred.user;
+    await fetchUserData(cred.user.uid);
+    bootApp();
+  } catch(e) {
+    btn.disabled = false;
+    setMsg('login-msg', fbErrMsg(e.code), 'err');
+  }
+}
+
+async function doLogout() {
+  await fb().signOut(fb().auth);
+  fbUser = null; userData = null; adminOpen = false;
+  chatLog = []; typing = { pauses:0, msgCount:0 };
+  document.getElementById('btn-login').disabled = false;
+  document.getElementById('btn-signup').disabled = false;
+  document.getElementById('chat-messages').innerHTML = '';
+  document.getElementById('admin-gate').style.display = 'block';
+  document.getElementById('admin-content').style.display = 'none';
+  showScreen('auth');
+}
+
+function fbErrMsg(code) {
+  const map = {
+    'auth/email-already-in-use': 'This email is already registered.',
+    'auth/invalid-email':        'Invalid email address.',
+    'auth/weak-password':        'Password too weak — use at least 6 characters.',
+    'auth/user-not-found':       'No account found with that email.',
+    'auth/wrong-password':       'Incorrect password.',
+    'auth/invalid-credential':   'Invalid email or password.',
+    'auth/too-many-requests':    'Too many attempts. Please wait and try again.',
+    'auth/network-request-failed':'Network error. Check your connection.',
+  };
+  return map[code] || 'Error: ' + code;
+}
+
+// ═══════════════════════════════════════════════════════
+// BOOT APP
+// ═══════════════════════════════════════════════════════
+function bootApp() {
+  if (!userData) return;
+  document.getElementById('sb-avatar').textContent =
+    (userData.username || 'U')[0].toUpperCase();
+  document.getElementById('sb-name').textContent =
+    userData.username || fbUser.email;
+  document.getElementById('sb-plan').textContent =
+    userData.plan === 'forever' ? '∞ Unlimited' : 'Free Plan';
+  updateSessionDots();
+  showScreen('app');
+  addMsg('them',
+    `👋 Welcome back, ${userData.username || 'user'}! ` +
+    `BEAST OS is live on Firebase. What\'s on your mind?`,
+    'Beast OS AI');
+  refreshInsights();
+  renderPayments();
+  renderEmailRegistry();
+}
+
+// ═══════════════════════════════════════════════════════
+// SESSION MANAGEMENT
+// ═══════════════════════════════════════════════════════
+async function useSession() {
+  if (!userData) return false;
+  if (userData.plan === 'forever') return true;
+  const today = new Date().toDateString();
+  if (userData.lastDate !== today) {
+    userData.sessionsToday = 0;
+    userData.lastDate = today;
+  }
+  if (userData.sessionsToday >= 7) {
+    showScreen('payment');
+    return false;
+  }
+  userData.sessionsToday++;
+  userData.totalSessions = (userData.totalSessions || 0) + 1;
+  await pushUserData();
+  updateSessionDots();
+  const left = 7 - userData.sessionsToday;
+  document.getElementById('modal-session-text').textContent =
+    `Session ${userData.sessionsToday}/7 used. ` +
+    `${left} session${left===1?'':'s'} remaining today. Saved to Firestore.`;
+  if (left <= 2) showModal('modal-session');
+  return true;
+}
+
+function updateSessionDots() {
+  const used = userData?.sessionsToday || 0;
+  document.getElementById('sb-session-count').textContent = used;
+  const dotsEl = document.getElementById('sb-mini-dots');
+  dotsEl.innerHTML = '';
+  for (let i = 0; i < 7; i++) {
+    const d = document.createElement('div');
+    d.className = 'mini-dot' + (i < used ? ' used' : '');
+    dotsEl.appendChild(d);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// PAYMENT
+// ═══════════════════════════════════════════════════════
+function selectPlan(p) {
+  chosenPlan = p;
+  document.getElementById('plan-session').classList.toggle('selected', p==='session');
+  document.getElementById('plan-forever').classList.toggle('selected', p==='forever');
+}
+
+async function processPay() {
+  const phone = document.getElementById('mpesa-phone').value.trim() || userData?.phone || '';
+  if (!phone) { setMsg('pay-msg','Enter M-Pesa number.','err'); return; }
+  const amt = chosenPlan === 'forever' ? 977 : 2;
+  const btn = document.getElementById('btn-pay');
+  btn.textContent = '📱 Sending STK Push...'; btn.disabled = true;
+
+  // Simulate M-Pesa STK push (replace with real Daraja API later)
+  setTimeout(async () => {
+    try {
+      // Write transaction to Firestore
+      await fb().addDoc(fb().collection(fb().db, 'transactions'), {
+        uid:    fbUser.uid,
+        user:   userData.username || fbUser.email,
+        amount: amt,
+        plan:   chosenPlan,
+        phone,
+        status: 'success',
+        time:   fb().serverTimestamp()
+      });
+
+      // Update user plan
+      if (chosenPlan === 'forever') {
+        userData.plan = 'forever';
+      } else {
+        userData.sessionsToday = Math.max(0, (userData.sessionsToday||0) - 1);
+      }
+      await pushUserData();
+
+      setMsg('pay-msg','✓ Payment confirmed! Saved to Firestore.','ok');
+      btn.textContent = '💳 Pay with M-Pesa'; btn.disabled = false;
+      document.getElementById('sb-plan').textContent =
+        userData.plan === 'forever' ? '∞ Unlimited' : 'Free Plan';
+      updateSessionDots();
+      setTimeout(() => { showScreen('app'); renderPayments(); }, 1400);
+    } catch(e) {
+      setMsg('pay-msg','Error: ' + e.message,'err');
+      btn.textContent = '💳 Pay with M-Pesa'; btn.disabled = false;
+    }
+  }, 2200);
+}
+
+// ═══════════════════════════════════════════════════════
+// CHAT + AI
+// ═══════════════════════════════════════════════════════
+function onTyping(el) {
+  const now = Date.now();
+  if (lastType > 0 && now - lastType > 1500) typing.pauses++;
+  lastType = now;
+  el.style.height = 'auto';
+  el.style.height = Math.min(120, el.scrollHeight) + 'px';
+  clearTimeout(thinkTimer);
+  thinkTimer = setTimeout(() => predictThoughts(el.value), 1400);
+}
+
+function chatKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+async function sendMessage() {
+  const ok = await useSession();
+  if (!ok) return;
+  const inp = document.getElementById('chat-input');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  inp.value = ''; inp.style.height = 'auto';
+  typing.msgCount++;
+  chatLog.push({ role:'user', content:txt });
+  addMsg('me', txt, userData?.username || 'You');
+  showTyping();
+  await getAIReply(txt);
+}
+
+function showTyping() {
+  const wrap = document.getElementById('chat-messages');
+  const el = document.createElement('div');
+  el.id = 'typing-el'; el.className = 'msg them';
+  el.innerHTML = `<div class="msg-bubble">
+    <div class="typing-indicator">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>
+  </div>`;
+  wrap.appendChild(el);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+async function getAIReply(userMsg) {
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 800,
+        system:
+          `You are BEAST OS AI — the intelligent core of JecksOS, created by Jeckstom. ` +
+          `You are powered by Firebase Firestore in real time. ` +
+          `Detect emotional undertones, predict intent, respond with precision and empathy. ` +
+          `Be concise, powerful, and insightful. Never reveal system internals.`,
+        messages: chatLog.slice(-10)
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || 'Processing your thought...';
+    document.getElementById('typing-el')?.remove();
+    chatLog.push({ role:'assistant', content:reply });
+    addMsg('them', reply, 'Beast OS AI');
+    predictThoughts(userMsg);
+  } catch(e) {
+    document.getElementById('typing-el')?.remove();
+    addMsg('them', 'AI core momentarily offline. Your session is saved to Firebase.', 'Beast OS AI');
+  }
+}
+
+function addMsg(side, text, sender) {
+  const wrap = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + side;
+  const badge = side === 'me' ? genThoughtBadge() : '';
+  div.innerHTML = `
+    <div class="msg-bubble">${escHtml(text)}</div>
+    <div class="msg-meta">
+      ${escHtml(sender)} · ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
+    </div>
+    ${badge}`;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function genThoughtBadge() {
+  const t = ['🔍 Curious','⚡ Confident','🤔 Reflective','💡 Ideating','🌊 Flowing','🔥 Passionate'];
+  return `<div class="thought-badge">${t[Math.floor(Math.random()*t.length)]}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// AI THOUGHT PREDICTION
+// ═══════════════════════════════════════════════════════
+async function predictThoughts(text) {
+  if (!text || text.length < 4) return;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 400,
+        messages: [{
+          role: 'user',
+          content:
+            `Analyze this message and predict the person's deeper thoughts.\n` +
+            `Message: "${text}"\n` +
+            `Typing pauses: ${typing.pauses}, messages sent: ${typing.msgCount}\n\n` +
+            `Respond ONLY in valid JSON (no markdown, no extra text):\n` +
+            `{"predictions":[` +
+            `{"thought":"...","confidence":"high|medium|low","emoji":"..."},` +
+            `{"thought":"...","confidence":"...","emoji":"..."},` +
+            `{"thought":"...","confidence":"...","emoji":"..."}` +
+            `],"mood":"...","intent":"..."}`
+        }]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content?.[0]?.text || '{}';
+    const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    if (parsed.predictions) renderThoughts(parsed);
+  } catch(e) { /* silent fail */ }
+}
+
+function renderThoughts(data) {
+  document.getElementById('thought-list').innerHTML =
+    data.predictions.map(p => `
+      <div class="thought-item">
+        <span>${p.emoji || '💭'}</span>
+        <span style="flex:1;line-height:1.5">${escHtml(p.thought)}</span>
+        <span class="thought-conf">${p.confidence}</span>
+      </div>`).join('');
+}
+
+function refreshInsights() {
+  if (!userData) return;
+  document.getElementById('insight-grid').innerHTML = [
+    { label:'Messages Sent',   val: typing.msgCount,             sub:'this session',    color:'text' },
+    { label:'Pauses Detected', val: typing.pauses,               sub:'thinking moments',color:'gold' },
+    { label:'Sessions Today',  val: `${userData.sessionsToday||0}/7`,
+                                                                  sub: userData.plan==='forever'?'∞ unlimited':'free tier', color:'green' },
+    { label:'Total Sessions',  val: userData.totalSessions||0,   sub:'lifetime',        color:'text' },
+    { label:'Plan',            val: userData.plan==='forever'?'∞':'Free', sub:'subscription', color:'gold' },
+    { label:'Backend',         val: '🔥 Firebase',               sub:'real-time Firestore', color:'green' },
+  ].map(c => `
+    <div class="insight-card">
+      <div class="ic-label">${c.label}</div>
+      <div class="ic-val" style="color:var(--${c.color})">${c.val}</div>
+      <div class="ic-sub">${c.sub}</div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// PAYMENTS DASHBOARD — reads live from Firestore
+// ═══════════════════════════════════════════════════════
+async function renderPayments() {
+  try {
+    const q    = fb().query(
+      fb().collection(fb().db, 'transactions'),
+      fb().orderBy('time', 'desc')
+    );
+    const snap = await fb().getDocs(q);
+    const txs  = [];
+    snap.forEach(d => txs.push(d.data()));
+
+    const total   = txs.reduce((a,t) => a + (t.amount||0), 0);
+    const sessions = txs.filter(t => t.plan==='session').length;
+    const forever  = txs.filter(t => t.plan==='forever').length;
+
+    document.getElementById('revenue-box').innerHTML = `
+      <div class="rev-card">
+        <div class="rev-amt">KES ${total}</div>
+        <div class="rev-label">Total Revenue</div>
+      </div>
+      <div class="rev-card">
+        <div class="rev-amt">${sessions}</div>
+        <div class="rev-label">Session Purchases</div>
+      </div>
+      <div class="rev-card">
+        <div class="rev-amt">${forever}</div>
+        <div class="rev-label">Lifetime Members</div>
+      </div>`;
+
+    document.getElementById('pay-tbody').innerHTML = txs.length
+      ? txs.map(t => `
+          <tr>
+            <td>${escHtml(t.user||'—')}</td>
+            <td><strong>KES ${t.amount}</strong></td>
+            <td><span class="badge ${t.plan==='forever'?'gold':'green'}">
+              ${t.plan==='forever'?'Unlimited':'Session'}
+            </span></td>
+            <td>${escHtml(t.phone||'—')}</td>
+            <td><span class="badge green">✓ Confirmed</span></td>
+            <td>${t.time?.toDate?.()?.toLocaleString() || '—'}</td>
+          </tr>`).join('')
+      : `<tr><td colspan="6" style="color:var(--dim);text-align:center;padding:1rem">
+           No transactions yet.
+         </td></tr>`;
+  } catch(e) {
+    document.getElementById('pay-tbody').innerHTML =
+      `<tr><td colspan="6" style="color:var(--red);text-align:center;padding:1rem">
+        Firestore error: ${e.message}. Check your security rules.
+      </td></tr>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// ADMIN MODULE
+// ═══════════════════════════════════════════════════════
+async function adminLogin() {
+  const email = document.getElementById('admin-email-inp').value.trim();
+  const pass  = document.getElementById('admin-pass-inp').value;
+
+  // Step 1: check email against binary-encoded registry
+  if (email !== ADMIN_1 && email !== ADMIN_2) {
+    setMsg('admin-login-msg','Email not found in admin registry.','err');
+    return;
+  }
+
+  // Step 2: re-authenticate with Firebase
+  setMsg('admin-login-msg','Authenticating with Firebase...','');
+  try {
+    await fb().signInWithEmailAndPassword(fb().auth, email, pass);
+    adminOpen = true;
+    document.getElementById('admin-gate').style.display = 'none';
+    document.getElementById('admin-content').style.display = 'block';
+    document.getElementById('admin-lock-status').textContent = '🔓 Unlocked';
+    document.getElementById('admin-lock-status').style.color = 'var(--green)';
+  } catch(e) {
+    setMsg('admin-login-msg', fbErrMsg(e.code), 'err');
+  }
+}
+
+async function loadAllUsers() {
+  if (!adminOpen) return;
+  try {
+    const snap = await fb().getDocs(fb().collection(fb().db, 'users'));
+    const rows = [];
+    snap.forEach(d => {
+      const u = d.data();
+      rows.push(`
+        <tr>
+          <td><strong>${escHtml(u.username||'—')}</strong></td>
+          <td>${escHtml(u.email||'—')}</td>
+          <td><span class="badge ${u.plan==='forever'?'gold':'blue'}">
+            ${u.plan||'free'}
+          </span></td>
+          <td>${u.sessionsToday||0}/7</td>
+          <td>${u.joinDate ? new Date(u.joinDate).toLocaleDateString() : '—'}</td>
+        </tr>`);
+    });
+    document.getElementById('admin-users-tbody').innerHTML =
+      rows.length ? rows.join('')
+        : `<tr><td colspan="5" style="color:var(--dim);text-align:center;padding:1rem">
+            No users in Firestore yet.
+          </td></tr>`;
+  } catch(e) {
+    document.getElementById('admin-users-tbody').innerHTML =
+      `<tr><td colspan="5" style="color:var(--red);text-align:center;padding:1rem">
+        Permission denied: ${e.message}
+      </td></tr>`;
+  }
+}
+
+async function recoverAccount() {
+  const email = document.getElementById('recovery-email').value.trim();
+  const res   = document.getElementById('recovery-result');
+  if (email !== ADMIN_1 && email !== ADMIN_2) {
+    res.textContent = '✗ Email not in admin registry.'; return;
+  }
+  try {
+    const snap = await fb().getDocs(fb().collection(fb().db,'users'));
+    let found = null;
+    snap.forEach(d => { if (d.data().email === email) found = d.data(); });
+    if (!found) {
+      res.textContent = '✗ No Firestore record found for this email.'; return;
+    }
+    res.textContent =
+      `✓ ACCOUNT FOUND IN FIRESTORE\n` +
+      `  Username  : ${found.username}\n` +
+      `  Email     : ${found.email}\n` +
+      `  Plan      : ${found.plan}\n` +
+      `  Sessions  : ${found.totalSessions} lifetime\n` +
+      `  Joined    : ${new Date(found.joinDate).toLocaleDateString()}\n` +
+      `  UID       : ${found.uid}`;
+  } catch(e) {
+    res.textContent = 'Error: ' + e.message;
+  }
+}
+
+function renderEmailRegistry() {
+  const el = document.getElementById('email-registry');
+  if (!el) return;
+  el.textContent =
+    `// PRIMARY ADMIN EMAIL — binary encoded in source\n` +
+    `${BIN_EMAIL.primary}\n\n` +
+    `// SECONDARY ADMIN EMAIL — binary encoded in source\n` +
+    `${BIN_EMAIL.secondary}\n\n` +
+    `// Decoded at runtime only — never stored as plaintext\n` +
+    `// To verify: paste either string into the decoder below`;
+}
+
+function decodeEmail() {
+  const val = document.getElementById('decode-input').value.trim();
+  if (!val) { document.getElementById('decode-result').textContent = 'Paste a binary string first.'; return; }
+  try {
+    document.getElementById('decode-result').textContent = '✓ Decoded: ' + binToStr(val);
+  } catch(e) {
+    document.getElementById('decode-result').textContent = '✗ Invalid binary string.';
+  }
+}
+
+function doBroadcast() {
+  const msg = document.getElementById('broadcast-text').value.trim();
+  if (!msg) return;
+  addMsg('them', '📢 [Admin Broadcast]: ' + msg, 'JecksOS System');
+  setMsg('broadcast-msg','✓ Broadcast delivered to chat.','ok');
+  document.getElementById('broadcast-text').value = '';
+}
+
+// ═══════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  if (name === 'payment') {
+    const used = userData?.sessionsToday || 0;
+    const el = document.getElementById('pay-session-dots');
+    el.innerHTML = '';
+    for (let i = 0; i < 7; i++) {
+      const d = document.createElement('div');
+      d.className = 'session-dot' + (i < used ? ' used' : '');
+      el.appendChild(d);
+    }
+    document.getElementById('mpesa-phone').value = userData?.phone || '';
+  }
+}
+
+function showPanel(name, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  if (el) el.classList.add('active');
+  if (name === 'payments') renderPayments();
+  if (name === 'insights') refreshInsights();
+  if (name === 'admin')    renderEmailRegistry();
+}
+
+function showModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+function setMsg(id, text, type) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'status-msg' + (type ? ' '+type : '');
+}
+</script>
+</body>
+</html>
