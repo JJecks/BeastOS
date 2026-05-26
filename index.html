@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JecksOS · Home</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:wght@200;300;400&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:#04070f;
+  --surface:rgba(10,16,30,0.8);
+  --border:rgba(255,255,255,0.07);
+  --gold:#c8a84b;
+  --gold2:#f0d07a;
+  --gold-glow:rgba(200,168,75,0.25);
+  --cyan:#00d4ff;
+  --cyan-glow:rgba(0,212,255,0.2);
+  --text:#d8e4f0;
+  --dim:#3a5070;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;min-height:100%;background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;overflow-x:hidden;}
+
+/* BG */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(0,80,180,0.12), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 90%, rgba(200,168,75,0.08), transparent 55%);
+  pointer-events:none;
+}
+/* Grid */
+body::after{
+  content:'';position:fixed;inset:0;z-index:0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,212,255,0.025) 1px,transparent 1px);
+  background-size:60px 60px;
+  pointer-events:none;
+}
+
+/* CANVAS */
+#bg-canvas{position:fixed;inset:0;z-index:1;opacity:0.3;pointer-events:none;}
+
+/* CONTENT */
+.content{position:relative;z-index:10;min-height:100vh;display:flex;flex-direction:column;}
+
+/* HEADER */
+header{
+  text-align:center;
+  padding:4rem 1rem 2.5rem;
+}
+.logo-wrap{
+  display:inline-block;
+  animation:logoFloat 4s ease-in-out infinite;
+}
+@keyframes logoFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.logo{
+  font-family:'Orbitron',monospace;
+  font-size:clamp(2.5rem,8vw,5rem);
+  font-weight:900;
+  letter-spacing:0.12em;
+  color:var(--gold);
+  text-shadow:0 0 40px var(--gold-glow),0 0 80px rgba(200,168,75,0.1);
+}
+.logo-sub{
+  font-family:'Exo 2',sans-serif;
+  font-size:clamp(0.7rem,2vw,0.95rem);
+  letter-spacing:0.5em;
+  color:var(--dim);
+  text-transform:uppercase;
+  margin-top:0.5rem;
+}
+.divider{
+  display:flex;align-items:center;gap:1rem;
+  max-width:400px;margin:1.8rem auto;
+}
+.divider-line{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);}
+.divider-gem{color:var(--gold);font-size:0.7rem;}
+
+/* STATUS BAR */
+.status-bar{
+  display:flex;align-items:center;justify-content:center;
+  gap:1.5rem;flex-wrap:wrap;
+  margin-bottom:3rem;
+  font-family:'Orbitron',monospace;
+  font-size:0.6rem;
+  letter-spacing:0.15em;
+  color:var(--dim);
+  text-transform:uppercase;
+}
+.status-dot{
+  display:flex;align-items:center;gap:0.4rem;
+}
+.dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--cyan);
+  box-shadow:0 0 6px var(--cyan);
+  animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+
+/* APP GRID */
+.app-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));
+  gap:1rem;
+  max-width:1100px;
+  margin:0 auto;
+  padding:0 1.5rem 4rem;
+}
+
+.app-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:1.6rem;
+  cursor:pointer;
+  transition:all 0.25s;
+  display:flex;flex-direction:column;gap:0.8rem;
+  position:relative;
+  overflow:hidden;
+  backdrop-filter:blur(16px);
+  text-decoration:none;
+  color:inherit;
+}
+.app-card::before{
+  content:'';
+  position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--border),transparent);
+  opacity:0;transition:opacity 0.25s;
+}
+.app-card:hover{
+  border-color:rgba(0,212,255,0.2);
+  box-shadow:0 20px 60px rgba(0,0,0,0.5), 0 0 30px rgba(0,212,255,0.06);
+  transform:translateY(-3px);
+}
+.app-card:hover::before{opacity:1;}
+.app-card.gold-card:hover{
+  border-color:rgba(200,168,75,0.3);
+  box-shadow:0 20px 60px rgba(0,0,0,0.5), 0 0 30px var(--gold-glow);
+}
+
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem;}
+.card-icon{font-size:2rem;line-height:1;}
+.card-badge{
+  font-family:'Orbitron',monospace;
+  font-size:0.55rem;
+  letter-spacing:0.15em;
+  padding:0.2rem 0.5rem;
+  border-radius:20px;
+  text-transform:uppercase;
+}
+.badge-live{background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.2);}
+.badge-new{background:rgba(0,212,255,0.12);color:var(--cyan);border:1px solid rgba(0,212,255,0.2);}
+.badge-core{background:rgba(200,168,75,0.12);color:var(--gold);border:1px solid rgba(200,168,75,0.2);}
+
+.card-title{
+  font-family:'Orbitron',monospace;
+  font-size:0.88rem;
+  font-weight:700;
+  letter-spacing:0.08em;
+  color:var(--text);
+}
+.card-desc{
+  font-size:0.82rem;
+  color:var(--dim);
+  line-height:1.6;
+}
+.card-footer{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:auto;padding-top:0.8rem;
+  border-top:1px solid var(--border);
+  font-family:'Orbitron',monospace;
+  font-size:0.58rem;
+  letter-spacing:0.12em;
+  color:var(--dim);
+  text-transform:uppercase;
+}
+.card-arrow{color:var(--cyan);font-size:0.9rem;transition:transform 0.2s;}
+.app-card:hover .card-arrow{transform:translateX(4px);}
+
+/* FOOTER */
+footer{
+  text-align:center;
+  padding:2rem 1rem 3rem;
+  font-family:'Orbitron',monospace;
+  font-size:0.6rem;
+  color:var(--dim);
+  letter-spacing:0.2em;
+  text-transform:uppercase;
+  border-top:1px solid var(--border);
+}
+footer span{color:var(--gold);}
+
+/* CLOCK */
+#clock{
+  position:fixed;top:1rem;right:1.5rem;
+  font-family:'Orbitron',monospace;
+  font-size:0.7rem;color:var(--dim);
+  letter-spacing:0.1em;z-index:20;text-align:right;
+}
+#clock .clock-time{font-size:1rem;color:var(--text);}
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<div id="clock">
+  <div class="clock-time" id="clock-time">00:00</div>
+  <div id="clock-date">—</div>
+</div>
+
+<div class="content">
+  <header>
+    <div class="logo-wrap">
+      <div class="logo">JecksOS</div>
+      <div class="logo-sub">Powered by BEAST Engine · Firebase Edition</div>
+    </div>
+    <div class="divider">
+      <div class="divider-line"></div>
+      <div class="divider-gem">◆</div>
+      <div class="divider-line"></div>
+    </div>
+    <div class="status-bar">
+      <div class="status-dot"><div class="dot"></div>System Online</div>
+      <div class="status-dot"><div class="dot" style="background:var(--gold);box-shadow:0 0 6px var(--gold)"></div>Firebase Live</div>
+      <div class="status-dot"><div class="dot" style="background:#10b981;box-shadow:0 0 6px #10b981"></div>6 Modules Active</div>
+    </div>
+  </header>
+
+  <!-- APP GRID -->
+  <div class="app-grid">
+
+    <a href="beast-os-firebase.html" class="app-card gold-card">
+      <div class="card-top">
+        <div class="card-icon">💬</div>
+        <span class="card-badge badge-live">Firebase Live</span>
+      </div>
+      <div class="card-title">BEAST Comms</div>
+      <div class="card-desc">
+        AI-powered communication suite. Real-time Firebase Auth + Firestore.
+        M-Pesa payments. KES 2/session · KES 977 unlimited.
+        Thought prediction engine.
+      </div>
+      <div class="card-footer">
+        <span>Main Module · Firebase</span>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+    <a href="JecksOS.html" class="app-card gold-card">
+      <div class="card-top">
+        <div class="card-icon">🖥</div>
+        <span class="card-badge badge-core">OS Shell</span>
+      </div>
+      <div class="card-title">JecksOS Desktop</div>
+      <div class="card-desc">
+        Full desktop OS shell. Boot sequence, login screen,
+        window manager, taskbar, terminal, start menu.
+        All modules accessible from one interface.
+      </div>
+      <div class="card-footer">
+        <span>Core OS · v1.0</span>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+    <a href="prime-security-suite.html" class="app-card">
+      <div class="card-top">
+        <div class="card-icon">🔐</div>
+        <span class="card-badge badge-new">512-bit</span>
+      </div>
+      <div class="card-title">Prime Security Suite</div>
+      <div class="card-desc">
+        Real RSA encryption engine. 512-bit prime generation
+        using Miller-Rabin. Encrypt, decrypt, visualize.
+        Riemann zeta zeros · Prime gap distribution.
+      </div>
+      <div class="card-footer">
+        <span>Cryptography Module</span>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+    <a href="soul-mirror.html" class="app-card">
+      <div class="card-top">
+        <div class="card-icon">✦</div>
+        <span class="card-badge badge-new">AI Powered</span>
+      </div>
+      <div class="card-title">Soul Mirror</div>
+      <div class="card-desc">
+        Biblical identity engine. Discover your Bible character,
+        spiritual strengths and weaknesses. Daily habits tracker,
+        scripture quiz and growth log.
+      </div>
+      <div class="card-footer">
+        <span>Biblical Module</span>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+    <a href="game-suite.html" class="app-card">
+      <div class="card-top">
+        <div class="card-icon">🎮</div>
+        <span class="card-badge badge-new">Canvas</span>
+      </div>
+      <div class="card-title">Game Suite</div>
+      <div class="card-desc">
+        Archery game with wind physics and power charging.
+        Brick Breaker with power-ups and multi-HP bricks.
+        Both games in one file with smooth Canvas rendering.
+      </div>
+      <div class="card-footer">
+        <span>Gaming Module</span>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+    <a href="divisibility-test-of-7.html" class="app-card">
+      <div class="card-top">
+        <div class="card-icon">⬡</div>
+        <span class="card-badge badge-core">OS Core</span>
+      </div>
+      <div class="card-title">Divisibility Test of 7</div>
+      <div class="card-desc">
+        Custom numbering system starting at 7.
+        Primes → 0. Non-primes → binary.
+        512-bit capacity analysis. Full Rust source code.
+        OS backend module.
+      </div>
+      <div class="card-footer">
+        <span>Math Module · Rust</span>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+  </div>
+
+  <footer>
+    <div>JecksOS · Built by <span>Jeckstom</span> · BEAST Engine v1.0</div>
+    <div style="margin-top:0.4rem;font-size:0.55rem">
+      Firebase · Firestore · M-Pesa · AI · 512-bit RSA
+    </div>
+  </footer>
+</div>
+
+<script>
+// Clock
+function tick() {
+  const now  = new Date();
+  document.getElementById('clock-time').textContent =
+    now.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+  document.getElementById('clock-date').textContent =
+    now.toLocaleDateString([], { weekday:'short', month:'short', day:'numeric' });
+}
+tick();
+setInterval(tick, 1000);
+
+// Particle background
+const canvas = document.getElementById('bg-canvas');
+const ctx    = canvas.getContext('2d');
+let W, H, pts = [];
+
+function resize() {
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+for (let i = 0; i < 70; i++) {
+  pts.push({
+    x:  Math.random() * window.innerWidth,
+    y:  Math.random() * window.innerHeight,
+    vx: (Math.random() - 0.5) * 0.3,
+    vy: (Math.random() - 0.5) * 0.3,
+    r:  Math.random() * 1.2 + 0.3,
+    c:  Math.random() > 0.6 ? '#c8a84b' : '#00d4ff',
+    o:  Math.random() * 0.5 + 0.1,
+  });
+}
+
+(function draw() {
+  ctx.clearRect(0, 0, W, H);
+  pts.forEach(p => {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+    if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = p.c;
+    ctx.globalAlpha = p.o;
+    ctx.fill();
+  });
+  ctx.globalAlpha = 0.04;
+  ctx.strokeStyle = '#00d4ff';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i < pts.length; i++) {
+    for (let j = i + 1; j < pts.length; j++) {
+      const dx = pts[i].x - pts[j].x;
+      const dy = pts[i].y - pts[j].y;
+      if (dx*dx + dy*dy < 14400) {
+        ctx.beginPath();
+        ctx.moveTo(pts[i].x, pts[i].y);
+        ctx.lineTo(pts[j].x, pts[j].y);
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "*.html", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/", "dest": "/index.html" },
+    { "src": "/beast-os", "dest": "/beast-os-firebase.html" },
+    { "src": "/prime", "dest": "/prime-security-suite.html" },
+    { "src": "/soul", "dest": "/soul-mirror.html" },
+    { "src": "/games", "dest": "/game-suite.html" },
+    { "src": "/div7", "dest": "/divisibility-test-of-7.html" },
+    { "src": "/comms", "dest": "/beast-os-firebase.html" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}

@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Divisibility Test of 7 · OS Module</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#000;
+  --surface:#050505;
+  --border:#1a1a1a;
+  --green:#00ff41;
+  --green2:#00cc33;
+  --green-dim:#003d10;
+  --amber:#ffb000;
+  --amber2:#ff8c00;
+  --red:#ff2200;
+  --blue:#00aaff;
+  --white:#e8ffe8;
+  --dim:#2a4a2a;
+  --seven:#ffff00;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg);
+  color:var(--green);
+  font-family:'JetBrains Mono',monospace;
+  font-size:13px;
+  min-height:100vh;
+  overflow-x:hidden;
+  cursor:default;
+}
+
+/* CRT scanlines */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent,transparent 2px,
+    rgba(0,255,65,0.012) 2px,rgba(0,255,65,0.012) 4px
+  );
+  pointer-events:none;z-index:9999;
+}
+/* CRT vignette */
+body::after{
+  content:'';
+  position:fixed;inset:0;
+  background:radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.7) 100%);
+  pointer-events:none;z-index:9998;
+}
+
+/* BOOT SCREEN */
+#boot{
+  position:fixed;inset:0;
+  background:#000;
+  z-index:9000;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;
+}
+.boot-line{
+  font-size:12px;
+  color:var(--green);
+  letter-spacing:0.05em;
+  margin:1px 0;
+  opacity:0;
+  animation:bootFade 0.1s forwards;
+}
+.boot-line.amber{color:var(--amber);}
+.boot-line.red{color:var(--red);}
+.boot-line.seven{color:var(--seven);}
+@keyframes bootFade{to{opacity:1;}}
+
+/* MAIN LAYOUT */
+#app{display:none;max-width:1100px;margin:0 auto;padding:0.5rem;}
+
+/* TITLE BAR */
+.title-bar{
+  background:var(--green);
+  color:#000;
+  font-weight:800;
+  font-size:11px;
+  letter-spacing:0.2em;
+  padding:0.3rem 0.8rem;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  text-transform:uppercase;
+  margin-bottom:1px;
+}
+.title-bar .blink{animation:blink 1s step-end infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+
+/* PANEL */
+.panel{
+  background:var(--surface);
+  border:1px solid var(--border);
+  margin-bottom:6px;
+  position:relative;
+}
+.panel-header{
+  background:var(--green-dim);
+  border-bottom:1px solid var(--border);
+  padding:0.3rem 0.8rem;
+  font-size:10px;
+  letter-spacing:0.2em;
+  color:var(--green);
+  text-transform:uppercase;
+  display:flex;justify-content:space-between;
+}
+.panel-body{padding:0.8rem;}
+
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:0;}
+.tab-btn{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;
+  letter-spacing:0.15em;
+  padding:0.4rem 0.9rem;
+  background:transparent;
+  border:none;
+  border-right:1px solid var(--border);
+  color:var(--dim);
+  cursor:pointer;
+  text-transform:uppercase;
+  transition:all 0.15s;
+}
+.tab-btn:hover,.tab-btn.active{background:var(--green-dim);color:var(--green);}
+.tab-content{display:none;padding:0.8rem;}
+.tab-content.active{display:block;}
+
+/* STREAM OUTPUT */
+.stream-wrap{
+  background:#000;
+  border:1px solid var(--border);
+  padding:0.5rem;
+  height:340px;
+  overflow-y:auto;
+  font-size:11px;
+  line-height:1.6;
+  font-family:'Share Tech Mono',monospace;
+}
+.stream-wrap::-webkit-scrollbar{width:4px;}
+.stream-wrap::-webkit-scrollbar-track{background:#000;}
+.stream-wrap::-webkit-scrollbar-thumb{background:var(--green-dim);}
+
+.row{display:flex;gap:0.5rem;align-items:baseline;margin-bottom:1px;padding:1px 2px;}
+.row:hover{background:rgba(0,255,65,0.04);}
+.row-n{color:var(--dim);min-width:60px;text-align:right;font-size:10px;}
+.row-orig{min-width:70px;color:var(--amber);text-align:right;}
+.row-enc{flex:1;letter-spacing:0.06em;word-break:break-all;}
+.row-enc.is-prime{color:var(--red);font-weight:700;}
+.row-enc.is-seven{color:var(--seven);font-weight:800;text-shadow:0 0 6px var(--seven);}
+.row-enc.is-bin{color:var(--green);}
+.row-tag{font-size:9px;color:var(--dim);min-width:55px;}
+.row-tag.prime-tag{color:var(--red);}
+.row-tag.seven-tag{color:var(--seven);}
+
+/* CONTROLS */
+.ctrl-row{display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.6rem;align-items:center;}
+.terminal-input{
+  background:#000;
+  border:1px solid var(--border);
+  color:var(--green);
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;
+  padding:0.3rem 0.5rem;
+  outline:none;
+  width:100px;
+}
+.terminal-input:focus{border-color:var(--green);}
+.btn{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:0.12em;
+  padding:0.35rem 0.8rem;
+  border:1px solid var(--green);
+  background:transparent;
+  color:var(--green);
+  cursor:pointer;
+  text-transform:uppercase;
+  transition:all 0.15s;
+}
+.btn:hover{background:var(--green-dim);}
+.btn.amber{border-color:var(--amber);color:var(--amber);}
+.btn.amber:hover{background:rgba(255,176,0,0.1);}
+.btn.red{border-color:var(--red);color:var(--red);}
+.btn:disabled{opacity:0.3;cursor:not-allowed;}
+
+/* STATS ROW */
+.stats-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:4px;
+  margin-top:0.6rem;
+}
+.stat-box{
+  background:#000;
+  border:1px solid var(--border);
+  padding:0.5rem 0.7rem;
+}
+.stat-label{font-size:9px;letter-spacing:0.15em;color:var(--dim);text-transform:uppercase;margin-bottom:2px;}
+.stat-val{font-size:14px;font-weight:700;color:var(--green);letter-spacing:0.05em;}
+.stat-val.amber{color:var(--amber);}
+.stat-val.seven{color:var(--seven);}
+.stat-val.red{color:var(--red);}
+
+/* PROGRESS */
+.progress-track{height:3px;background:var(--border);margin:0.4rem 0;}
+.progress-fill{height:100%;background:var(--green);width:0%;transition:width 0.2s;box-shadow:0 0 4px var(--green);}
+
+/* 512-BIT SECTION */
+.bit-grid{
+  display:grid;
+  grid-template-columns:repeat(32,1fr);
+  gap:1px;
+  margin:0.5rem 0;
+}
+.bit{
+  aspect-ratio:1;
+  display:flex;align-items:center;justify-content:center;
+  font-size:8px;
+  font-family:'Share Tech Mono',monospace;
+  border:1px solid #0a0a0a;
+  transition:all 0.2s;
+  cursor:default;
+}
+.bit.one{background:rgba(0,255,65,0.15);color:var(--green);}
+.bit.zero{background:rgba(255,34,0,0.1);color:var(--red);}
+.bit.seven-bit{background:rgba(255,255,0,0.15);color:var(--seven);}
+.bit:hover{transform:scale(1.3);z-index:10;}
+
+/* INFINITY SYMBOL */
+.infinity{
+  font-size:1.8rem;
+  font-style:italic;
+  font-weight:800;
+  color:var(--amber);
+  display:inline-block;
+  transform:skewX(-15deg);
+  text-shadow:0 0 10px var(--amber);
+  letter-spacing:-0.05em;
+}
+
+/* RUST CODE */
+.rust-block{
+  background:#000;
+  border:1px solid var(--border);
+  padding:0.8rem;
+  overflow-x:auto;
+  font-size:11px;
+  line-height:1.8;
+  white-space:pre;
+}
+.rs-kw{color:#ff7b72;}
+.rs-fn{color:#d2a8ff;}
+.rs-str{color:#a5d6ff;}
+.rs-num{color:var(--amber);}
+.rs-com{color:#8b949e;}
+.rs-mac{color:#ffa657;}
+.rs-type{color:#79c0ff;}
+
+/* BINARY STREAM */
+.bin-stream{
+  background:#000;
+  border:1px solid var(--border);
+  padding:0.5rem;
+  height:80px;
+  overflow:hidden;
+  font-size:10px;
+  font-family:'Share Tech Mono',monospace;
+  color:var(--green-dim);
+  word-break:break-all;
+  line-height:1.4;
+  position:relative;
+}
+.bin-stream-inner{
+  position:absolute;
+  animation:streamScroll 8s linear infinite;
+  color:var(--green-dim);
+}
+@keyframes streamScroll{
+  from{transform:translateY(0);}
+  to{transform:translateY(-50%);}
+}
+.bin-highlight{color:var(--seven);font-weight:700;}
+
+/* STATUS LINE */
+.status{
+  font-size:10px;
+  color:var(--dim);
+  letter-spacing:0.1em;
+  padding:0.2rem 0;
+  min-height:1.4em;
+}
+.status.ok{color:var(--green);}
+.status.warn{color:var(--amber);}
+.status.err{color:var(--red);}
+
+/* MATRIX RAIN corner */
+#matrix-canvas{
+  position:fixed;
+  top:0;right:0;
+  width:120px;height:100%;
+  opacity:0.07;
+  pointer-events:none;
+  z-index:1;
+}
+
+/* LEGEND */
+.legend{display:flex;gap:1rem;flex-wrap:wrap;font-size:10px;margin-bottom:0.5rem;}
+.leg-item{display:flex;align-items:center;gap:0.3rem;}
+.leg-dot{width:8px;height:8px;border:1px solid currentColor;}
+
+/* EQUATION */
+.equation{
+  background:#000;
+  border-left:2px solid var(--seven);
+  padding:0.5rem 0.8rem;
+  margin:0.5rem 0;
+  font-size:11px;
+  line-height:1.8;
+  color:var(--white);
+}
+.equation .seven-num{color:var(--seven);font-weight:700;}
+.equation .label{color:var(--dim);font-size:10px;}
+
+/* SCROLLBAR global */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:#000;}
+::-webkit-scrollbar-thumb{background:var(--green-dim);}
+</style>
+</head>
+<body>
+
+<canvas id="matrix-canvas"></canvas>
+
+<!-- BOOT SEQUENCE -->
+<div id="boot">
+  <div id="boot-lines"></div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="title-bar">
+    <span>◈ DIVISIBILITY TEST OF 7 · OS MODULE v1.0 · PRIME ENCODER</span>
+    <span class="blink">█</span>
+  </div>
+
+  <!-- BINARY RAIN STREAM -->
+  <div class="bin-stream">
+    <div class="bin-stream-inner" id="bin-stream-inner"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('encode')">[ ENCODER ]</button>
+    <button class="tab-btn" onclick="showTab('analysis')">[ 512-BIT ANALYSIS ]</button>
+    <button class="tab-btn" onclick="showTab('rust')">[ RUST SOURCE ]</button>
+    <button class="tab-btn" onclick="showTab('theory')">[ THEORY ]</button>
+  </div>
+
+  <!-- TAB: ENCODER -->
+  <div id="tab-encode" class="tab-content active">
+    <div class="legend">
+      <div class="leg-item" style="color:var(--green)"><div class="leg-dot"></div> Non-prime → binary</div>
+      <div class="leg-item" style="color:var(--red)"><div class="leg-dot"></div> Prime → 0</div>
+      <div class="leg-item" style="color:var(--seven)"><div class="leg-dot"></div> Contains 7 → highlighted</div>
+      <div class="leg-item" style="color:var(--amber)"><div class="leg-dot"></div> Original number</div>
+    </div>
+
+    <div class="ctrl-row">
+      <span style="font-size:10px;color:var(--dim)">START:</span>
+      <input class="terminal-input" id="inp-start" value="7" type="number" min="7"/>
+      <span style="font-size:10px;color:var(--dim)">COUNT:</span>
+      <input class="terminal-input" id="inp-count" value="200" type="number" min="1" max="50000"/>
+      <button class="btn" onclick="runEncoder()" id="btn-run">▶ RUN</button>
+      <button class="btn amber" onclick="runEncoder(true)" id="btn-stream">∞ STREAM</button>
+      <button class="btn red" onclick="stopEncoder()" id="btn-stop" disabled>■ STOP</button>
+      <button class="btn" onclick="exportData()">↓ EXPORT</button>
+    </div>
+
+    <div class="progress-track"><div class="progress-fill" id="enc-progress"></div></div>
+    <div class="status" id="enc-status">READY — Starting number: 7 · Infinity = <span class="infinity">8</span></div>
+
+    <div style="display:flex;gap:6px;margin-bottom:4px;font-size:10px;color:var(--dim);letter-spacing:0.1em;padding:0 2px;">
+      <span style="min-width:60px;text-align:right">#</span>
+      <span style="min-width:70px;text-align:right">ORIGINAL</span>
+      <span style="flex:1">ENCODED (binary / zero)</span>
+      <span style="min-width:55px">TYPE</span>
+    </div>
+    <div class="stream-wrap" id="stream-out"></div>
+
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-box"><div class="stat-label">Numbers Processed</div><div class="stat-val" id="s-total">0</div></div>
+      <div class="stat-box"><div class="stat-label">Primes Found (→ 0)</div><div class="stat-val red" id="s-primes">0</div></div>
+      <div class="stat-box"><div class="stat-label">Non-Primes (→ bin)</div><div class="stat-val" id="s-nonprime">0</div></div>
+      <div class="stat-box"><div class="stat-label">Contains 7</div><div class="stat-val seven" id="s-sevens">0</div></div>
+      <div class="stat-box"><div class="stat-label">Bits Generated</div><div class="stat-val amber" id="s-bits">0</div></div>
+      <div class="stat-box"><div class="stat-label">Density (0s/total)</div><div class="stat-val" id="s-density">0%</div></div>
+    </div>
+  </div>
+
+  <!-- TAB: 512-BIT ANALYSIS -->
+  <div id="tab-analysis" class="tab-content">
+    <div class="equation">
+      <div><span class="seven-num">7</span> <span class="label">// The Foundation Number</span></div>
+      <div>∞ = <span class="seven-num" style="font-style:italic;transform:skewX(-15deg);display:inline-block">8</span> <span class="label">// Infinity encoded as slanted 8</span></div>
+      <div>Prime(n) → <span class="seven-num">0</span> <span class="label">// All primes become zero</span></div>
+      <div>NonPrime(n) → <span class="seven-num">bin(n)</span> <span class="label">// All non-primes become binary</span></div>
+      <div>Contains(<span class="seven-num">7</span>) → <span class="seven-num">7̲</span> <span class="label">// 7s are marked special</span></div>
+    </div>
+
+    <button class="btn" onclick="run512Analysis()" style="margin-bottom:0.8rem">⚙ RUN 512-BIT ANALYSIS</button>
+
+    <div class="panel">
+      <div class="panel-header"><span>512-BIT CAPACITY MAP</span><span id="bit-fill-pct">0 / 512 bits used</span></div>
+      <div class="panel-body">
+        <div class="bit-grid" id="bit-grid"></div>
+        <div class="stats-grid" style="margin-top:0.5rem">
+          <div class="stat-box"><div class="stat-label">Max number encodable</div><div class="stat-val amber" id="a-maxnum">—</div></div>
+          <div class="stat-box"><div class="stat-label">Numbers fitting in 512b</div><div class="stat-val" id="a-fitting">—</div></div>
+          <div class="stat-box"><div class="stat-label">Primes in range</div><div class="stat-val red" id="a-primes">—</div></div>
+          <div class="stat-box"><div class="stat-label">Non-primes in range</div><div class="stat-val" id="a-nonprime">—</div></div>
+          <div class="stat-box"><div class="stat-label">Bits used by non-primes</div><div class="stat-val" id="a-bits-used">—</div></div>
+          <div class="stat-box"><div class="stat-label">Bits remaining</div><div class="stat-val seven" id="a-bits-left">—</div></div>
+          <div class="stat-box"><div class="stat-label">Numbers with 7</div><div class="stat-val seven" id="a-sevens">—</div></div>
+          <div class="stat-box"><div class="stat-label">Infinity (∞) = </div><div class="stat-val amber" style="font-style:italic">8̲</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><span>CAPACITY REPORT</span></div>
+      <div class="panel-body">
+        <div id="capacity-report" style="font-size:11px;line-height:2;color:var(--green);white-space:pre-wrap;font-family:'Share Tech Mono',monospace"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: RUST SOURCE -->
+  <div id="tab-rust" class="tab-content">
+    <div style="font-size:10px;color:var(--amber);margin-bottom:0.5rem;letter-spacing:0.1em">
+      // RUST IMPLEMENTATION — Cannot find prime numbers. Replaces all primes with 0. Save as main.rs · compile with: cargo run
+    </div>
+    <div class="rust-block" id="rust-code"></div>
+    <button class="btn" onclick="copyRust()" style="margin-top:0.5rem">⎘ COPY RUST CODE</button>
+  </div>
+
+  <!-- TAB: THEORY -->
+  <div id="tab-theory" class="tab-content">
+    <div style="line-height:2;font-size:11px;color:var(--white)">
+<pre style="white-space:pre-wrap;font-family:'Share Tech Mono',monospace;font-size:11px;line-height:1.9;color:var(--green)">
+╔══════════════════════════════════════════════════════════════╗
+║       DIVISIBILITY TEST OF 7 — THEORETICAL FOUNDATION       ║
+╚══════════════════════════════════════════════════════════════╝
+
+<span style="color:var(--seven)">§1. THE FOUNDATION NUMBER: 7</span>
+
+  The sequence begins at 7. This is not arbitrary.
+  In mathematics: 7 is the 4th prime number.
+  In scripture:   7 represents completeness and perfection.
+  In this system: 7 is the ORIGIN POINT of all counting.
+
+<span style="color:var(--seven)">§2. INFINITY = </span><span style="color:var(--amber);font-style:italic;font-size:14px">8</span>
+
+  Infinity is encoded as the number 8, written slanted (italic).
+  This is because ∞ = 8 rotated 90°. In our system:
+    → ∞ is a real addressable value
+    → It is the theoretical upper bound of the sequence
+    → Stored in memory as: 8 (italic/slanted)
+
+<span style="color:var(--seven)">§3. THE ENCODING RULES</span>
+
+  RULE 1: Start at 7. Count upward toward ∞ (8̲).
+  RULE 2: Numbers 0–69:   if prime → SKIP (leave blank / write 0)
+  RULE 3: Numbers 70+:    if prime → SKIP (continue rule)
+  RULE 4: All non-primes → convert to BINARY representation
+  RULE 5: All primes     → replace with: 0
+  RULE 6: Any number containing digit 7 → special marker
+
+<span style="color:var(--seven)">§4. BINARY REPRESENTATION</span>
+
+  Example sequence from 7:
+    7   → 0         (7 is prime)
+    8   → 1000      (binary of 8)
+    9   → 1001      (binary of 9)
+    10  → 1010      (binary of 10)
+    11  → 0         (11 is prime)
+    12  → 1100      (binary of 12)
+    13  → 0         (13 is prime)
+    14  → 1110      (binary of 14)
+    15  → 1111      (binary of 15)
+    16  → 10000     (binary of 16)
+
+<span style="color:var(--seven)">§5. 512-BIT CAPACITY</span>
+
+  A 512-bit space can hold the binary representation of numbers
+  up to 2^512 − 1. This is an astronomically large number:
+  
+  2^512 = 13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084096
+
+  In our encoding system, non-prime binary representations
+  are packed into this 512-bit space. The number of non-prime
+  integers that fit depends on their individual bit lengths.
+
+<span style="color:var(--seven)">§6. OS MODULE PURPOSE</span>
+
+  This module serves as the PRIME FILTER layer of the OS:
+    → Input:  raw integer stream from hardware
+    → Output: encoded binary stream, primes zeroed out
+    → Use:    cryptographic key validation, memory addressing,
+              RSA pre-filtering, hash table construction
+
+<span style="color:var(--seven)">§7. WHY PRIMES BECOME ZERO</span>
+
+  Primes are "indivisible" — they refuse to be broken down.
+  In this system, zero represents the void of divisibility.
+  A prime number, when asked "are you divisible by 7?",
+  answers only with silence. That silence is: 0.
+
+  All other numbers speak in the language of binary.
+  They are ones and zeros — constructive, buildable,
+  composable. Like the living stones of a temple.
+</pre>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// =====================
+// MATRIX RAIN
+// =====================
+const mc = document.getElementById('matrix-canvas');
+const mctx = mc.getContext('2d');
+mc.height = window.innerHeight;
+mc.width = 120;
+const cols = Math.floor(120/12);
+const drops = Array(cols).fill(1);
+function matrixRain(){
+  mctx.fillStyle='rgba(0,0,0,0.05)';
+  mctx.fillRect(0,0,120,mc.height);
+  mctx.fillStyle='#00ff41';
+  mctx.font='12px Share Tech Mono';
+  drops.forEach((y,i)=>{
+    const ch = Math.random()>0.5 ? '1':'0';
+    mctx.fillStyle = Math.random()>0.95?'#ffff00':'#00ff41';
+    mctx.fillText(ch,i*12,y*12);
+    if(y*12>mc.height && Math.random()>0.975) drops[i]=0;
+    drops[i]++;
+  });
+}
+setInterval(matrixRain,50);
+
+// =====================
+// BOOT SEQUENCE
+// =====================
+const bootLines=[
+  {t:'[  0.000000] DIVISIBILITY TEST OF 7 — OS MODULE INITIALIZING',c:''},
+  {t:'[  0.000001] Kernel: prime_filter.ko loading...',c:''},
+  {t:'[  0.000042] Memory: 512-bit address space reserved',c:'amber'},
+  {t:'[  0.000077] Foundation number: 7 ████████████████ LOCKED',c:'seven'},
+  {t:'[  0.000100] Infinity register: 8 (slanted) ← ∞',c:'amber'},
+  {t:'[  0.000200] Prime detection: DISABLED (by design)',c:'red'},
+  {t:'[  0.000201] Prime replacement: 0x00000000',c:'red'},
+  {t:'[  0.000300] Binary encoder: ONLINE',c:''},
+  {t:'[  0.000314] Rule 1: Skip primes 0–69 ✓',c:''},
+  {t:'[  0.000315] Rule 2: Skip primes 70+ ✓',c:''},
+  {t:'[  0.000316] Rule 3: Non-primes → binary ✓',c:''},
+  {t:'[  0.000317] Rule 4: Digit-7 highlighter: ARMED',c:'seven'},
+  {t:'[  0.000400] Rust backend: compiled (no_prime_edition)',c:''},
+  {t:'[  0.000500] 512-bit analysis module: READY',c:'amber'},
+  {t:'[  0.000777] All systems: OPERATIONAL',c:'seven'},
+  {t:'[  0.000778] ════════════════════════════════════',c:''},
+  {t:'[  0.000779] BOOT COMPLETE — DIVISIBILITY TEST OF 7',c:'seven'},
+];
+let bi=0;
+function bootStep(){
+  if(bi>=bootLines.length){
+    setTimeout(()=>{
+      document.getElementById('boot').style.display='none';
+      document.getElementById('app').style.display='block';
+      initBinStream();
+      renderRust();
+    },400);
+    return;
+  }
+  const bl=document.getElementById('boot-lines');
+  const d=document.createElement('div');
+  d.className='boot-line'+(bootLines[bi].c?' '+bootLines[bi].c:'');
+  d.textContent=bootLines[bi].t;
+  d.style.animationDelay='0s';
+  bl.appendChild(d);
+  bl.scrollTop=bl.scrollHeight;
+  bi++;
+  setTimeout(bootStep, bi<10?60:bi<15?80:120);
+}
+setTimeout(bootStep,300);
+
+// =====================
+// PRIME SIEVE
+// =====================
+function sieve(limit){
+  const s=new Uint8Array(limit+1);s.fill(1);
+  s[0]=s[1]=0;
+  for(let i=2;i*i<=limit;i++) if(s[i]) for(let j=i*i;j<=limit;j+=i) s[j]=0;
+  return s;
+}
+
+let SIEVE_LIMIT=200000;
+let IS_PRIME=sieve(SIEVE_LIMIT);
+
+function isPrime(n){
+  if(n<2)return false;
+  if(n<=SIEVE_LIMIT)return IS_PRIME[n]===1;
+  // Miller-Rabin for large
+  if(n%2===0)return false;
+  const witnesses=[2,3,5,7,11,13,17,19,23,29,31,37];
+  let d=n-1n,r=0n;
+  const bn=BigInt(n);
+  d=BigInt(n-1);
+  while(d%2n===0n){d/=2n;r++;}
+  outer:for(const a of witnesses){
+    if(a>=n)continue;
+    let x=modpow(BigInt(a),d,bn);
+    if(x===1n||x===bn-1n)continue;
+    for(let i=0n;i<r-1n;i++){
+      x=x*x%bn;
+      if(x===bn-1n)continue outer;
+    }
+    return false;
+  }
+  return true;
+}
+function modpow(b,e,m){let r=1n;b%=m;while(e>0n){if(e%2n===1n)r=r*b%m;e/=2n;b=b*b%m;}return r;}
+
+function hasSevenDigit(n){ return String(n).includes('7'); }
+
+function encode(n){
+  if(isPrime(n)) return '0';
+  return (n).toString(2);
+}
+
+// =====================
+// ENCODER
+// =====================
+let encRunning=false, encTimer=null;
+let encData=[];
+
+function runEncoder(stream=false){
+  stopEncoder();
+  const start=Math.max(7,parseInt(document.getElementById('inp-start').value)||7);
+  const count=stream?Infinity:Math.min(50000,parseInt(document.getElementById('inp-count').value)||200);
+  const out=document.getElementById('stream-out');
+  out.innerHTML='';
+  encData=[];
+  document.getElementById('btn-stop').disabled=false;
+  document.getElementById('btn-run').disabled=true;
+  document.getElementById('btn-stream').disabled=true;
+  encRunning=true;
+
+  let n=start,processed=0,primes=0,nonprime=0,sevens=0,bits=0;
+  let rowIdx=0;
+  const BATCH=stream?20:50;
+  const DELAY=stream?30:5;
+
+  function step(){
+    if(!encRunning) return;
+    const end=Math.min(n+BATCH, stream?Infinity:start+count);
+    const fragment=document.createDocumentFragment();
+
+    for(;n<end && (stream||processed<count);n++,processed++){
+      const encoded=encode(n);
+      const prime=encoded==='0';
+      const seven=hasSevenDigit(n);
+      if(prime)primes++;else{nonprime++;bits+=encoded.length;}
+      if(seven)sevens++;
+      encData.push({n,encoded,prime,seven});
+
+      const row=document.createElement('div');
+      row.className='row';
+      row.innerHTML=`
+        <span class="row-n">${rowIdx+1}</span>
+        <span class="row-orig">${seven?'<span style="color:var(--seven)">'+n+'</span>':n}</span>
+        <span class="row-enc ${prime?'is-prime':seven?'is-seven':'is-bin'}">${encoded}</span>
+        <span class="row-tag ${prime?'prime-tag':seven?'seven-tag':''}">${prime?'PRIME→0':seven?'HAS 7':'BIN'}</span>`;
+      fragment.appendChild(row);
+      rowIdx++;
+
+      if(!stream && processed>=count) break;
+    }
+    out.appendChild(fragment);
+    out.scrollTop=out.scrollHeight;
+
+    // Update stats
+    document.getElementById('s-total').textContent=processed;
+    document.getElementById('s-primes').textContent=primes;
+    document.getElementById('s-nonprime').textContent=nonprime;
+    document.getElementById('s-sevens').textContent=sevens;
+    document.getElementById('s-bits').textContent=bits;
+    document.getElementById('s-density').textContent=processed>0?Math.round(primes/processed*100)+'%':'0%';
+    if(!stream) document.getElementById('enc-progress').style.width=(processed/count*100)+'%';
+    document.getElementById('enc-status').innerHTML=`Processing: n=${n} | primes zeroed: ${primes} | bits: ${bits} | ∞=<span class="infinity">8</span>`;
+    document.getElementById('enc-status').className='status ok';
+
+    if(!stream && processed>=count){
+      stopEncoder();
+      document.getElementById('enc-status').innerHTML=`✓ COMPLETE — ${processed} numbers encoded | ${primes} primes → 0 | ${bits} bits generated | ∞=<span class="infinity">8</span>`;
+      document.getElementById('enc-progress').style.width='100%';
+      return;
+    }
+    encTimer=setTimeout(step,DELAY);
+  }
+  step();
+}
+
+function stopEncoder(){
+  encRunning=false;
+  clearTimeout(encTimer);
+  document.getElementById('btn-stop').disabled=true;
+  document.getElementById('btn-run').disabled=false;
+  document.getElementById('btn-stream').disabled=false;
+}
+
+function exportData(){
+  if(!encData.length){alert('Run encoder first.');return;}
+  let csv='Number,Encoded,IsPrime,HasSeven\n';
+  encData.forEach(d=>csv+=`${d.n},${d.encoded},${d.prime},${d.seven}\n`);
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='divisibility7_encoded.csv';
+  a.click();
+}
+
+// =====================
+// 512-BIT ANALYSIS
+// =====================
+function run512Analysis(){
+  const BITS=512;
+  const grid=document.getElementById('bit-grid');
+  grid.innerHTML='';
+
+  // Sieve up to a reasonable range
+  const RANGE=10000;
+  let bitsUsed=0,primeCount=0,nonprimeCount=0,sevensCount=0;
+  let fitting=0;
+  let bitMap=[];
+
+  for(let n=7;n<=RANGE && bitsUsed<=BITS;n++){
+    const p=isPrime(n);
+    const s=hasSevenDigit(n);
+    if(s) sevensCount++;
+    if(p){
+      primeCount++;
+      // Primes take 1 bit (just a 0)
+      if(bitsUsed+1<=BITS){
+        bitMap.push({type:'zero',val:'0',n});
+        bitsUsed+=1;
+        fitting++;
+      }
+    } else {
+      nonprimeCount++;
+      const bin=n.toString(2);
+      if(bitsUsed+bin.length<=BITS){
+        bin.split('').forEach(b=>bitMap.push({type:s?'seven-bit':b==='1'?'one':'zero',val:b,n}));
+        bitsUsed+=bin.length;
+        fitting++;
+      } else break;
+    }
+  }
+
+  // Render bit grid (first 512 bits)
+  document.getElementById('bit-fill-pct').textContent=`${Math.min(bitsUsed,512)} / 512 bits used`;
+  bitMap.slice(0,512).forEach((b,i)=>{
+    const cell=document.createElement('div');
+    cell.className='bit '+b.type;
+    cell.textContent=b.val;
+    cell.title=`bit ${i+1} from n=${b.n}`;
+    grid.appendChild(cell);
+  });
+  // Fill remaining with dim zeros
+  for(let i=bitMap.length;i<512;i++){
+    const cell=document.createElement('div');
+    cell.className='bit';
+    cell.style.color='#111';
+    cell.textContent='·';
+    grid.appendChild(cell);
+  }
+
+  // Stats
+  document.getElementById('a-maxnum').textContent='2^512 − 1';
+  document.getElementById('a-fitting').textContent=fitting.toLocaleString();
+  document.getElementById('a-primes').textContent=primeCount.toLocaleString();
+  document.getElementById('a-nonprime').textContent=nonprimeCount.toLocaleString();
+  document.getElementById('a-bits-used').textContent=Math.min(bitsUsed,512);
+  document.getElementById('a-bits-left').textContent=Math.max(0,512-bitsUsed);
+  document.getElementById('a-sevens').textContent=sevensCount;
+
+  // Report
+  document.getElementById('capacity-report').innerHTML=
+`<span style="color:var(--seven)">╔══ 512-BIT CAPACITY REPORT ══════════════════════════════╗</span>
+<span style="color:var(--green)">║</span>  System Start         : <span style="color:var(--amber)">7</span> (Foundation Number)
+<span style="color:var(--green)">║</span>  Infinity Symbol      : <span style="color:var(--amber);font-style:italic">8̲</span> (8 slanted = ∞)
+<span style="color:var(--green)">║</span>  Address Space        : <span style="color:var(--amber)">512 bits</span>
+<span style="color:var(--green)">║</span>  Max Addressable      : 2^512 − 1
+<span style="color:var(--green)">║</span>    = 13407807929942597...096 (~1.34 × 10^154)
+<span style="color:var(--green)">║</span>
+<span style="color:var(--green)">║</span>  Numbers fitted in 512b : <span style="color:var(--green)">${fitting.toLocaleString()}</span>
+<span style="color:var(--green)">║</span>  Primes zeroed (→0)     : <span style="color:var(--red)">${primeCount.toLocaleString()}</span>
+<span style="color:var(--green)">║</span>  Non-primes (→binary)   : <span style="color:var(--green)">${nonprimeCount.toLocaleString()}</span>
+<span style="color:var(--green)">║</span>  Numbers with digit 7   : <span style="color:var(--seven)">${sevensCount.toLocaleString()}</span>
+<span style="color:var(--green)">║</span>  Bits used              : <span style="color:var(--amber)">${Math.min(bitsUsed,512)}</span>
+<span style="color:var(--green)">║</span>  Bits remaining         : <span style="color:var(--seven)">${Math.max(0,512-bitsUsed)}</span>
+<span style="color:var(--green)">║</span>
+<span style="color:var(--green)">║</span>  Prime density (0–${RANGE})  : ${Math.round(primeCount/(primeCount+nonprimeCount)*100)}%
+<span style="color:var(--green)">║</span>  Binary density         : ${Math.round(nonprimeCount/(primeCount+nonprimeCount)*100)}%
+<span style="color:var(--green)">║</span>
+<span style="color:var(--green)">║</span>  NOTE: Your 512-bit RSA primes from Prime Security Suite
+<span style="color:var(--green)">║</span>  produce a 1024-bit modulus n. This module's address space
+<span style="color:var(--green)">║</span>  maps perfectly onto the same 512-bit foundation.
+<span style="color:var(--seven)">╚══════════════════════════════════════════════════════════╝</span>`;
+}
+
+// =====================
+// RUST SOURCE
+// =====================
+function renderRust(){
+  document.getElementById('rust-code').innerHTML=`<span class="rs-com">// ═══════════════════════════════════════════════════════════</span>
+<span class="rs-com">// DIVISIBILITY TEST OF 7 — Rust Implementation</span>
+<span class="rs-com">// Module: prime_filter | Version: 1.0.0</span>
+<span class="rs-com">// NOTE: This program CANNOT find prime numbers by design.</span>
+<span class="rs-com">// All primes are replaced with 0. Non-primes → binary.</span>
+<span class="rs-com">// ═══════════════════════════════════════════════════════════</span>
+
+<span class="rs-kw">use</span> std::fmt;
+
+<span class="rs-com">// Infinity encoded as slanted 8 (italic representation)</span>
+<span class="rs-kw">const</span> <span class="rs-type">INFINITY_ENCODED</span>: <span class="rs-type">u64</span> = <span class="rs-num">8</span>; <span class="rs-com">// 8 (slanted) = ∞</span>
+<span class="rs-kw">const</span> <span class="rs-type">FOUNDATION</span>: <span class="rs-type">u64</span> = <span class="rs-num">7</span>;    <span class="rs-com">// Starting number</span>
+<span class="rs-kw">const</span> <span class="rs-type">BITS</span>: <span class="rs-type">usize</span> = <span class="rs-num">512</span>;       <span class="rs-com">// Address space</span>
+
+<span class="rs-com">/// Encoded value: either Zero (prime) or Binary (non-prime)</span>
+<span class="rs-kw">enum</span> <span class="rs-type">Encoded</span> {
+    <span class="rs-type">Zero</span>,              <span class="rs-com">// Prime → 0</span>
+    <span class="rs-type">Binary</span>(<span class="rs-type">String</span>),    <span class="rs-com">// Non-prime → binary string</span>
+}
+
+<span class="rs-kw">impl</span> fmt::<span class="rs-type">Display</span> <span class="rs-kw">for</span> <span class="rs-type">Encoded</span> {
+    <span class="rs-kw">fn</span> <span class="rs-fn">fmt</span>(&amp;<span class="rs-kw">self</span>, f: &amp;<span class="rs-kw">mut</span> fmt::<span class="rs-type">Formatter</span>) -&gt; fmt::<span class="rs-type">Result</span> {
+        <span class="rs-kw">match</span> <span class="rs-kw">self</span> {
+            <span class="rs-type">Encoded</span>::<span class="rs-type">Zero</span>       =&gt; <span class="rs-mac">write!</span>(f, <span class="rs-str">"0"</span>),
+            <span class="rs-type">Encoded</span>::<span class="rs-type">Binary</span>(s) =&gt; <span class="rs-mac">write!</span>(f, <span class="rs-str">"{}"</span>, s),
+        }
+    }
+}
+
+<span class="rs-com">/// Sieve of Eratosthenes — generates prime flags up to limit.</span>
+<span class="rs-com">/// We generate the sieve only to USE it for replacement —</span>
+<span class="rs-com">/// the program does NOT report primes. It erases them.</span>
+<span class="rs-kw">fn</span> <span class="rs-fn">build_sieve</span>(limit: <span class="rs-type">usize</span>) -&gt; <span class="rs-type">Vec</span>&lt;<span class="rs-type">bool</span>&gt; {
+    <span class="rs-kw">let mut</span> sieve = <span class="rs-mac">vec!</span>[<span class="rs-kw">true</span>; limit + <span class="rs-num">1</span>];
+    sieve[<span class="rs-num">0</span>] = <span class="rs-kw">false</span>;
+    <span class="rs-kw">if</span> limit &gt; <span class="rs-num">0</span> { sieve[<span class="rs-num">1</span>] = <span class="rs-kw">false</span>; }
+    <span class="rs-kw">let mut</span> i = <span class="rs-num">2</span>;
+    <span class="rs-kw">while</span> i * i &lt;= limit {
+        <span class="rs-kw">if</span> sieve[i] {
+            <span class="rs-kw">let mut</span> j = i * i;
+            <span class="rs-kw">while</span> j &lt;= limit { sieve[j] = <span class="rs-kw">false</span>; j += i; }
+        }
+        i += <span class="rs-num">1</span>;
+    }
+    sieve
+}
+
+<span class="rs-com">/// Encode a number using Divisibility Test of 7 rules:</span>
+<span class="rs-com">/// - Prime    → Zero (cannot be found, only erased)</span>
+<span class="rs-com">/// - Non-prime → Binary string representation</span>
+<span class="rs-kw">fn</span> <span class="rs-fn">encode</span>(n: <span class="rs-type">u64</span>, sieve: &amp;[<span class="rs-type">bool</span>]) -&gt; <span class="rs-type">Encoded</span> {
+    <span class="rs-kw">let</span> is_prime = <span class="rs-kw">if</span> (n <span class="rs-kw">as</span> <span class="rs-type">usize</span>) &lt; sieve.len() {
+        sieve[n <span class="rs-kw">as</span> <span class="rs-type">usize</span>]
+    } <span class="rs-kw">else</span> {
+        <span class="rs-fn">miller_rabin</span>(n)
+    };
+
+    <span class="rs-kw">if</span> is_prime {
+        <span class="rs-type">Encoded</span>::<span class="rs-type">Zero</span>   <span class="rs-com">// PRIME ERASED — replaced with 0</span>
+    } <span class="rs-kw">else</span> {
+        <span class="rs-type">Encoded</span>::<span class="rs-type">Binary</span>(<span class="rs-mac">format!</span>(<span class="rs-str">"{:b}"</span>, n))
+    }
+}
+
+<span class="rs-com">/// Miller-Rabin primality test for large numbers.</span>
+<span class="rs-com">/// Used only to ERASE primes — not to find them.</span>
+<span class="rs-kw">fn</span> <span class="rs-fn">miller_rabin</span>(n: <span class="rs-type">u64</span>) -&gt; <span class="rs-type">bool</span> {
+    <span class="rs-kw">if</span> n &lt; <span class="rs-num">2</span> { <span class="rs-kw">return</span> <span class="rs-kw">false</span>; }
+    <span class="rs-kw">if</span> n == <span class="rs-num">2</span> || n == <span class="rs-num">3</span> { <span class="rs-kw">return</span> <span class="rs-kw">true</span>; }
+    <span class="rs-kw">if</span> n % <span class="rs-num">2</span> == <span class="rs-num">0</span> { <span class="rs-kw">return</span> <span class="rs-kw">false</span>; }
+    <span class="rs-kw">let</span> witnesses: [<span class="rs-type">u64</span>; <span class="rs-num">7</span>] = [<span class="rs-num">2</span>,<span class="rs-num">3</span>,<span class="rs-num">5</span>,<span class="rs-num">7</span>,<span class="rs-num">11</span>,<span class="rs-num">13</span>,<span class="rs-num">17</span>];
+    <span class="rs-kw">let mut</span> d = n - <span class="rs-num">1</span>;
+    <span class="rs-kw">let mut</span> r = <span class="rs-num">0</span>;
+    <span class="rs-kw">while</span> d % <span class="rs-num">2</span> == <span class="rs-num">0</span> { d /= <span class="rs-num">2</span>; r += <span class="rs-num">1</span>; }
+    <span class="rs-str">'outer:</span> <span class="rs-kw">for</span> &amp;a <span class="rs-kw">in</span> &amp;witnesses {
+        <span class="rs-kw">if</span> a &gt;= n { <span class="rs-kw">continue</span>; }
+        <span class="rs-kw">let mut</span> x = <span class="rs-fn">mod_pow</span>(a, d, n);
+        <span class="rs-kw">if</span> x == <span class="rs-num">1</span> || x == n - <span class="rs-num">1</span> { <span class="rs-kw">continue</span>; }
+        <span class="rs-kw">for</span> _ <span class="rs-kw">in</span> <span class="rs-num">0</span>..r - <span class="rs-num">1</span> {
+            x = <span class="rs-fn">mod_pow</span>(x, <span class="rs-num">2</span>, n);
+            <span class="rs-kw">if</span> x == n - <span class="rs-num">1</span> { <span class="rs-kw">continue</span> <span class="rs-str">'outer</span>; }
+        }
+        <span class="rs-kw">return</span> <span class="rs-kw">false</span>;
+    }
+    <span class="rs-kw">true</span>
+}
+
+<span class="rs-kw">fn</span> <span class="rs-fn">mod_pow</span>(<span class="rs-kw">mut</span> base: <span class="rs-type">u64</span>, <span class="rs-kw">mut</span> exp: <span class="rs-type">u64</span>, modulus: <span class="rs-type">u64</span>) -&gt; <span class="rs-type">u64</span> {
+    <span class="rs-kw">let mut</span> result: <span class="rs-type">u128</span> = <span class="rs-num">1</span>;
+    <span class="rs-kw">let mut</span> b = base <span class="rs-kw">as</span> <span class="rs-type">u128</span>;
+    <span class="rs-kw">let</span> m = modulus <span class="rs-kw">as</span> <span class="rs-type">u128</span>;
+    <span class="rs-kw">while</span> exp &gt; <span class="rs-num">0</span> {
+        <span class="rs-kw">if</span> exp &amp; <span class="rs-num">1</span> == <span class="rs-num">1</span> { result = result * b % m; }
+        exp &gt;&gt;= <span class="rs-num">1</span>; b = b * b % m;
+    }
+    result <span class="rs-kw">as</span> <span class="rs-type">u64</span>
+}
+
+<span class="rs-kw">fn</span> <span class="rs-fn">has_seven</span>(n: <span class="rs-type">u64</span>) -&gt; <span class="rs-type">bool</span> {
+    <span class="rs-kw">let mut</span> x = n;
+    <span class="rs-kw">while</span> x &gt; <span class="rs-num">0</span> { <span class="rs-kw">if</span> x % <span class="rs-num">10</span> == <span class="rs-num">7</span> { <span class="rs-kw">return</span> <span class="rs-kw">true</span>; } x /= <span class="rs-num">10</span>; }
+    <span class="rs-kw">false</span>
+}
+
+<span class="rs-kw">fn</span> <span class="rs-fn">main</span>() {
+    <span class="rs-mac">println!</span>(<span class="rs-str">"╔══ DIVISIBILITY TEST OF 7 ══════════════════╗"</span>);
+    <span class="rs-mac">println!</span>(<span class="rs-str">"║  Foundation : {}"</span>, <span class="rs-type">FOUNDATION</span>);
+    <span class="rs-mac">println!</span>(<span class="rs-str">"║  Infinity   : {} (slanted 8)"</span>, <span class="rs-type">INFINITY_ENCODED</span>);
+    <span class="rs-mac">println!</span>(<span class="rs-str">"║  Bits       : {}"</span>, <span class="rs-type">BITS</span>);
+    <span class="rs-mac">println!</span>(<span class="rs-str">"╚════════════════════════════════════════════╝"</span>);
+
+    <span class="rs-kw">let</span> limit: <span class="rs-type">usize</span> = <span class="rs-num">100_000</span>;
+    <span class="rs-kw">let</span> sieve = <span class="rs-fn">build_sieve</span>(limit);
+    <span class="rs-kw">let mut</span> bits_used: <span class="rs-type">usize</span> = <span class="rs-num">0</span>;
+    <span class="rs-kw">let mut</span> primes_erased = <span class="rs-num">0u64</span>;
+    <span class="rs-kw">let mut</span> nonprimes_encoded = <span class="rs-num">0u64</span>;
+
+    <span class="rs-kw">let mut</span> n = <span class="rs-type">FOUNDATION</span>;
+    <span class="rs-kw">loop</span> {
+        <span class="rs-kw">if</span> bits_used &gt;= <span class="rs-type">BITS</span> { <span class="rs-kw">break</span>; }
+
+        <span class="rs-kw">let</span> encoded = <span class="rs-fn">encode</span>(n, &amp;sieve);
+        <span class="rs-kw">let</span> seven_marker = <span class="rs-kw">if</span> <span class="rs-fn">has_seven</span>(n) { <span class="rs-str">" ★7★"</span> } <span class="rs-kw">else</span> { <span class="rs-str">""</span> };
+
+        <span class="rs-kw">match</span> &amp;encoded {
+            <span class="rs-type">Encoded</span>::<span class="rs-type">Zero</span> =&gt; {
+                primes_erased += <span class="rs-num">1</span>;
+                bits_used += <span class="rs-num">1</span>;
+                <span class="rs-mac">println!</span>(<span class="rs-str">"{:&gt;8} | {:&lt;20} | PRIME→0{}"</span>, n, <span class="rs-str">"0"</span>, seven_marker);
+            },
+            <span class="rs-type">Encoded</span>::<span class="rs-type">Binary</span>(b) =&gt; {
+                nonprimes_encoded += <span class="rs-num">1</span>;
+                bits_used += b.len();
+                <span class="rs-mac">println!</span>(<span class="rs-str">"{:&gt;8} | {:&lt;20} | BIN{}"</span>, n, b, seven_marker);
+            }
+        }
+        n += <span class="rs-num">1</span>;
+    }
+
+    <span class="rs-mac">println!</span>(<span class="rs-str">"\n╔══ SUMMARY ════════════════════════╗"</span>);
+    <span class="rs-mac">println!</span>(<span class="rs-str">"║  Primes erased (→0) : {}"</span>, primes_erased);
+    <span class="rs-mac">println!</span>(<span class="rs-str">"║  Non-primes encoded : {}"</span>, nonprimes_encoded);
+    <span class="rs-mac">println!</span>(<span class="rs-str">"║  Bits used / 512    : {} / {}"</span>, bits_used, <span class="rs-type">BITS</span>);
+    <span class="rs-mac">println!</span>(<span class="rs-str">"╚═══════════════════════════════════╝"</span>);
+}`;
+}
+
+function copyRust(){
+  const text=document.getElementById('rust-code').innerText;
+  navigator.clipboard.writeText(text).then(()=>{
+    const b=document.querySelector('.btn[onclick="copyRust()"]');
+    b.textContent='✓ COPIED!';
+    setTimeout(()=>b.textContent='⎘ COPY RUST CODE',2000);
+  });
+}
+
+// =====================
+// BINARY STREAM BG
+// =====================
+function initBinStream(){
+  const el=document.getElementById('bin-stream-inner');
+  let s='';
+  for(let i=0;i<2000;i++){
+    if(i%7===0) s+=`<span class="bin-highlight">7</span>`;
+    else if(i%13===0) s+='<span style="color:var(--amber)">0</span>';
+    else s+=Math.random()>0.5?'1':'0';
+  }
+  el.innerHTML=s+s;
+}
+
+// =====================
+// TABS
+// =====================
+function showTab(name){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  event.target.classList.add('active');
+  if(name==='analysis') run512Analysis();
+}
+
+// Auto-run encoder on load
+setTimeout(()=>runEncoder(),200);
+</script>
+</body>
+</html>
