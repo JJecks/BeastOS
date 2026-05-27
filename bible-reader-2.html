@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JecksOS · Bible Reader · NWT</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400;1,600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+
+<!-- FIREBASE SDK -->
+<script type="module">
+  import { initializeApp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc,
+           getDocs, deleteDoc, doc, query, orderBy, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyD5xZbf3ErkYHQo_BXf492YvYo5lFQfzpA",
+    authDomain: "jecks-operating-system.firebaseapp.com",
+    projectId: "jecks-operating-system",
+    storageBucket: "jecks-operating-system.firebasestorage.app",
+    messagingSenderId: "85119343233",
+    appId: "1:85119343233:web:0c216332fc3c8972824b80",
+    measurementId: "G-6C0HN1MYND"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  window._fb = { auth, db, collection, addDoc, getDocs,
+                 deleteDoc, doc, query, orderBy, serverTimestamp };
+
+  onAuthStateChanged(auth, user => {
+    window._fbUser = user || null;
+    document.dispatchEvent(new Event('fb-ready'));
+  });
+</script>
+
+<style>
+/* ═══════════════════════════════════════
+   ROOT
+═══════════════════════════════════════ */
+:root {
+  --bg:        #09060e;
+  --surface:   #100d18;
+  --surface2:  #17132a;
+  --border:    rgba(200,168,75,0.15);
+  --gold:      #c8a84b;
+  --gold2:     #f0d07a;
+  --gold-dim:  rgba(200,168,75,0.08);
+  --gold-glow: rgba(200,168,75,0.3);
+  --purple:    #7c4dff;
+  --purple2:   #b39ddb;
+  --text:      #e8dfc8;
+  --dim:       #6a5f4a;
+  --green:     #00e676;
+  --red:       #ff3c3c;
+  --radius:    10px;
+}
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+html, body { height:100%; overflow:hidden; }
+body {
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Crimson Text', serif;
+  font-size:16px;
+}
+
+/* Starfield bg */
+body::before {
+  content:'';
+  position:fixed; inset:0; z-index:0;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%,
+      rgba(124,77,255,0.1), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 80% 100%,
+      rgba(200,168,75,0.07), transparent 55%);
+  pointer-events:none;
+}
+
+/* ═══════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════ */
+#app {
+  position:relative; z-index:10;
+  display:grid;
+  grid-template-rows:auto 1fr;
+  grid-template-columns:300px 1fr 320px;
+  grid-template-areas:
+    "header header header"
+    "sidebar reader vault";
+  height:100vh;
+  overflow:hidden;
+}
+
+/* ═══════════════════════════════════════
+   HEADER
+═══════════════════════════════════════ */
+#app-header {
+  grid-area:header;
+  display:flex; align-items:center;
+  justify-content:space-between;
+  padding:0.7rem 1.2rem;
+  background:rgba(9,6,14,0.95);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(20px);
+  gap:1rem;
+  flex-wrap:wrap;
+}
+.header-brand {
+  display:flex; align-items:center; gap:0.7rem;
+}
+.brand-stars {
+  display:flex; align-items:center;
+  position:relative;
+  width:40px; height:40px;
+  flex-shrink:0;
+}
+.brand-stars .s {
+  position:absolute;
+  color:var(--gold);
+  font-size:0.7rem;
+  filter:drop-shadow(0 0 4px var(--gold));
+}
+.brand-stars .inf {
+  position:absolute;
+  top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  font-size:1rem;
+  font-style:italic;
+  color:var(--gold2);
+  filter:drop-shadow(0 0 8px var(--gold));
+}
+.brand-text {
+  font-family:'Cinzel Decorative', serif;
+  font-size:1rem;
+  font-weight:700;
+  color:var(--gold);
+  text-shadow:0 0 16px var(--gold-glow);
+  letter-spacing:0.06em;
+}
+.brand-sub {
+  font-family:'Cinzel', serif;
+  font-size:0.6rem;
+  color:var(--dim);
+  letter-spacing:0.2em;
+  text-transform:uppercase;
+}
+
+/* Nav tabs */
+.nav-tabs {
+  display:flex; gap:4px; flex-wrap:wrap;
+}
+.nav-tab {
+  font-family:'Cinzel', serif;
+  font-size:0.65rem;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  padding:0.35rem 0.8rem;
+  border-radius:6px;
+  border:1px solid transparent;
+  cursor:pointer; color:var(--dim);
+  transition:all 0.2s;
+}
+.nav-tab:hover { color:var(--text); border-color:var(--border); }
+.nav-tab.active {
+  color:var(--gold);
+  border-color:var(--border);
+  background:var(--gold-dim);
+  box-shadow:0 0 10px var(--gold-glow);
+}
+
+/* Status */
+.header-status {
+  font-family:'JetBrains Mono', monospace;
+  font-size:0.62rem;
+  color:var(--dim);
+  letter-spacing:0.08em;
+  display:flex; align-items:center; gap:0.5rem;
+}
+.status-dot {
+  width:6px; height:6px; border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 5px var(--green);
+  animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+/* ═══════════════════════════════════════
+   SIDEBAR — Bible Books
+═══════════════════════════════════════ */
+#sidebar {
+  grid-area:sidebar;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex; flex-direction:column;
+  overflow:hidden;
+}
+.sidebar-head {
+  padding:0.8rem 1rem;
+  border-bottom:1px solid var(--border);
+  font-family:'Cinzel', serif;
+  font-size:0.68rem;
+  letter-spacing:0.18em;
+  color:var(--gold);
+  text-transform:uppercase;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.sidebar-search {
+  padding:0.6rem 0.8rem;
+  border-bottom:1px solid var(--border);
+}
+.sidebar-search input {
+  width:100%;
+  background:rgba(0,0,0,0.3);
+  border:1px solid var(--border);
+  border-radius:6px;
+  color:var(--text);
+  font-family:'Cinzel', serif;
+  font-size:0.72rem;
+  padding:0.4rem 0.7rem;
+  outline:none;
+  letter-spacing:0.08em;
+  transition:border-color 0.2s;
+}
+.sidebar-search input:focus { border-color:var(--gold); }
+.testament-label {
+  font-family:'Cinzel', serif;
+  font-size:0.6rem;
+  letter-spacing:0.2em;
+  color:var(--dim);
+  text-transform:uppercase;
+  padding:0.5rem 1rem 0.3rem;
+}
+.books-list {
+  flex:1; overflow-y:auto;
+  padding:0.3rem 0.5rem 1rem;
+}
+.books-list::-webkit-scrollbar { width:3px; }
+.books-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+.book-btn {
+  width:100%;
+  text-align:left;
+  padding:0.42rem 0.7rem;
+  border-radius:5px;
+  border:none;
+  background:transparent;
+  color:var(--text);
+  font-family:'Crimson Text', serif;
+  font-size:0.9rem;
+  cursor:pointer;
+  transition:all 0.15s;
+  letter-spacing:0.03em;
+}
+.book-btn:hover { background:var(--gold-dim); color:var(--gold2); }
+.book-btn.active {
+  background:rgba(200,168,75,0.12);
+  color:var(--gold);
+  font-weight:600;
+  border-left:2px solid var(--gold);
+}
+
+/* ═══════════════════════════════════════
+   READER — Main reading area
+═══════════════════════════════════════ */
+#reader-area {
+  grid-area:reader;
+  display:flex; flex-direction:column;
+  overflow:hidden;
+  background:var(--bg);
+}
+
+/* Chapter nav */
+.chapter-nav {
+  display:flex; align-items:center;
+  gap:0.5rem;
+  padding:0.6rem 1rem;
+  border-bottom:1px solid var(--border);
+  background:var(--surface);
+  flex-wrap:wrap;
+}
+.chapter-nav-title {
+  font-family:'Cinzel Decorative', serif;
+  font-size:0.85rem;
+  color:var(--gold);
+  letter-spacing:0.08em;
+  margin-right:0.5rem;
+}
+.ch-btn {
+  font-family:'Cinzel', serif;
+  font-size:0.62rem;
+  letter-spacing:0.1em;
+  padding:0.25rem 0.55rem;
+  border:1px solid var(--border);
+  background:transparent;
+  color:var(--dim);
+  border-radius:4px;
+  cursor:pointer;
+  transition:all 0.15s;
+}
+.ch-btn:hover, .ch-btn.active {
+  border-color:var(--gold);
+  color:var(--gold);
+  background:var(--gold-dim);
+}
+.ch-nav-arrow {
+  font-size:1rem; color:var(--gold);
+  border:1px solid var(--border);
+  background:transparent;
+  padding:0.2rem 0.5rem;
+  border-radius:4px;
+  cursor:pointer; transition:all 0.15s;
+}
+.ch-nav-arrow:hover { background:var(--gold-dim); }
+.chapter-scroll {
+  display:flex; gap:3px; flex:1;
+  overflow-x:auto; padding:0.1rem 0;
+}
+.chapter-scroll::-webkit-scrollbar { height:2px; }
+.chapter-scroll::-webkit-scrollbar-thumb { background:var(--border); }
+
+/* Verses */
+.verses-wrap {
+  flex:1; overflow-y:auto;
+  padding:1.5rem 2rem 3rem;
+}
+.verses-wrap::-webkit-scrollbar { width:4px; }
+.verses-wrap::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+
+.book-title-display {
+  font-family:'Cinzel Decorative', serif;
+  font-size:1.6rem;
+  color:var(--gold);
+  text-shadow:0 0 20px var(--gold-glow);
+  margin-bottom:0.3rem;
+}
+.chapter-title-display {
+  font-family:'Cinzel', serif;
+  font-size:0.8rem;
+  letter-spacing:0.25em;
+  color:var(--dim);
+  text-transform:uppercase;
+  margin-bottom:1.5rem;
+}
+.verse-row {
+  display:flex; gap:0.7rem;
+  margin-bottom:0.5rem;
+  padding:0.4rem 0.5rem;
+  border-radius:6px;
+  transition:background 0.15s;
+  cursor:pointer;
+  align-items:flex-start;
+}
+.verse-row:hover { background:rgba(200,168,75,0.06); }
+.verse-row.selected { background:rgba(200,168,75,0.1); border-left:2px solid var(--gold); }
+.verse-num {
+  font-family:'Cinzel', serif;
+  font-size:0.65rem;
+  color:var(--gold);
+  min-width:24px;
+  margin-top:0.25rem;
+  letter-spacing:0.05em;
+  flex-shrink:0;
+}
+.verse-text {
+  font-size:1rem;
+  line-height:1.75;
+  color:var(--text);
+  flex:1;
+}
+.verse-text em { color:var(--purple2); font-style:italic; }
+
+/* Save button on verse hover */
+.verse-save-btn {
+  opacity:0; transition:opacity 0.15s;
+  background:var(--gold-dim);
+  border:1px solid var(--border);
+  color:var(--gold);
+  font-family:'Cinzel', serif;
+  font-size:0.55rem;
+  letter-spacing:0.1em;
+  padding:0.2rem 0.4rem;
+  border-radius:4px;
+  cursor:pointer;
+  white-space:nowrap;
+  flex-shrink:0;
+  margin-top:0.25rem;
+}
+.verse-row:hover .verse-save-btn { opacity:1; }
+.verse-save-btn:hover { background:rgba(200,168,75,0.2); }
+
+/* Iframe fallback */
+#iframe-reader {
+  flex:1; border:none; width:100%; display:none;
+}
+.iframe-notice {
+  background:rgba(200,168,75,0.06);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:1.2rem;
+  margin:1rem;
+  font-size:0.85rem;
+  color:var(--dim);
+  line-height:1.7;
+  display:none;
+}
+.iframe-notice a {
+  color:var(--gold);
+  text-decoration:none;
+}
+.iframe-notice a:hover { text-decoration:underline; }
+
+/* Welcome state */
+#reader-welcome {
+  flex:1;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:1rem; padding:2rem; text-align:center;
+}
+.welcome-icon {
+  font-size:3rem;
+  filter:drop-shadow(0 0 16px var(--gold-glow));
+  animation:floatIcon 3s ease-in-out infinite;
+}
+@keyframes floatIcon { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
+.welcome-title {
+  font-family:'Cinzel Decorative', serif;
+  font-size:1.3rem; color:var(--gold);
+  text-shadow:0 0 16px var(--gold-glow);
+}
+.welcome-sub { font-size:0.9rem; color:var(--dim); line-height:1.7; max-width:400px; }
+
+/* ═══════════════════════════════════════
+   VAULT — Saved Verses
+═══════════════════════════════════════ */
+#vault {
+  grid-area:vault;
+  background:var(--surface);
+  border-left:1px solid var(--border);
+  display:flex; flex-direction:column;
+  overflow:hidden;
+}
+.vault-head {
+  padding:0.8rem 1rem;
+  border-bottom:1px solid var(--border);
+  font-family:'Cinzel', serif;
+  font-size:0.68rem;
+  letter-spacing:0.18em;
+  color:var(--gold);
+  text-transform:uppercase;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.vault-tabs {
+  display:flex;
+  border-bottom:1px solid var(--border);
+}
+.vault-tab {
+  flex:1; text-align:center;
+  font-family:'Cinzel', serif;
+  font-size:0.6rem;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  padding:0.45rem;
+  color:var(--dim);
+  cursor:pointer;
+  border-bottom:2px solid transparent;
+  transition:all 0.2s;
+}
+.vault-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+.vault-content { flex:1; overflow-y:auto; }
+.vault-content::-webkit-scrollbar { width:3px; }
+.vault-content::-webkit-scrollbar-thumb { background:var(--border); }
+
+/* Saved verse card */
+.saved-verse {
+  padding:0.8rem 1rem;
+  border-bottom:1px solid rgba(200,168,75,0.08);
+  transition:background 0.15s;
+}
+.saved-verse:hover { background:var(--gold-dim); }
+.saved-verse-ref {
+  font-family:'Cinzel', serif;
+  font-size:0.65rem;
+  color:var(--gold);
+  letter-spacing:0.1em;
+  margin-bottom:0.3rem;
+  display:flex; justify-content:space-between; align-items:center;
+}
+.saved-verse-text {
+  font-size:0.85rem;
+  line-height:1.6;
+  color:var(--text);
+  font-style:italic;
+}
+.saved-verse-del {
+  background:transparent; border:none;
+  color:var(--dim); cursor:pointer;
+  font-size:0.75rem; padding:0.1rem 0.3rem;
+  border-radius:3px; transition:color 0.15s;
+}
+.saved-verse-del:hover { color:var(--red); }
+
+/* Binary view */
+.binary-view {
+  padding:0.8rem 1rem;
+  border-bottom:1px solid rgba(200,168,75,0.08);
+}
+.binary-ref {
+  font-family:'Cinzel', serif;
+  font-size:0.62rem;
+  color:var(--gold);
+  letter-spacing:0.1em;
+  margin-bottom:0.3rem;
+}
+.binary-text {
+  font-family:'JetBrains Mono', monospace;
+  font-size:0.58rem;
+  color:#00ff41;
+  line-height:1.6;
+  word-break:break-all;
+  background:#000;
+  padding:0.4rem;
+  border-radius:4px;
+  border:1px solid #111;
+  max-height:80px;
+  overflow:hidden;
+  cursor:pointer;
+  transition:max-height 0.3s;
+}
+.binary-text.expanded { max-height:300px; }
+.binary-text:hover { border-color:var(--gold); }
+
+/* Save input panel */
+.save-panel {
+  padding:0.8rem 1rem;
+  border-top:1px solid var(--border);
+  background:rgba(0,0,0,0.2);
+}
+.save-panel-title {
+  font-family:'Cinzel', serif;
+  font-size:0.62rem;
+  color:var(--dim);
+  letter-spacing:0.15em;
+  text-transform:uppercase;
+  margin-bottom:0.5rem;
+}
+.save-input {
+  width:100%;
+  background:rgba(0,0,0,0.4);
+  border:1px solid var(--border);
+  border-radius:6px;
+  color:var(--text);
+  font-family:'Crimson Text', serif;
+  font-size:0.88rem;
+  padding:0.5rem 0.7rem;
+  outline:none;
+  resize:none;
+  line-height:1.5;
+  transition:border-color 0.2s;
+}
+.save-input:focus { border-color:var(--gold); }
+.save-ref-input {
+  width:100%;
+  background:rgba(0,0,0,0.4);
+  border:1px solid var(--border);
+  border-radius:6px;
+  color:var(--gold);
+  font-family:'Cinzel', serif;
+  font-size:0.72rem;
+  padding:0.4rem 0.7rem;
+  outline:none;
+  margin-top:0.4rem;
+  letter-spacing:0.08em;
+  transition:border-color 0.2s;
+}
+.save-ref-input:focus { border-color:var(--gold); }
+.save-btn {
+  width:100%; margin-top:0.5rem;
+  padding:0.55rem;
+  border:1px solid var(--gold);
+  background:var(--gold-dim);
+  color:var(--gold);
+  font-family:'Cinzel', serif;
+  font-size:0.65rem;
+  font-weight:700;
+  letter-spacing:0.15em;
+  text-transform:uppercase;
+  border-radius:6px;
+  cursor:pointer;
+  transition:all 0.2s;
+}
+.save-btn:hover { background:rgba(200,168,75,0.2); box-shadow:0 0 12px var(--gold-glow); }
+.save-msg { font-size:0.72rem; text-align:center; margin-top:0.4rem; min-height:1em; }
+.save-msg.ok { color:var(--green); }
+.save-msg.err { color:var(--red); }
+
+/* Admin lock */
+.vault-locked {
+  flex:1; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:0.8rem; padding:1.5rem; text-align:center;
+}
+.vault-locked-icon { font-size:2rem; }
+.vault-locked-text { font-family:'Cinzel',serif; font-size:0.72rem; color:var(--dim); letter-spacing:0.1em; line-height:1.7; }
+
+/* Buttons */
+.icon-btn {
+  background:transparent; border:none;
+  color:var(--dim); cursor:pointer;
+  font-size:0.8rem; padding:0.2rem 0.4rem;
+  border-radius:4px; transition:color 0.15s;
+}
+.icon-btn:hover { color:var(--gold); }
+
+/* Loading spinner */
+.loader {
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:0.8rem; padding:3rem; flex:1;
+}
+.loader-ring {
+  width:32px; height:32px;
+  border:2px solid var(--border);
+  border-top-color:var(--gold);
+  border-radius:50%;
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+.loader-text {
+  font-family:'Cinzel', serif;
+  font-size:0.65rem;
+  color:var(--dim);
+  letter-spacing:0.15em;
+}
+
+/* Notification */
+.notif {
+  position:fixed; bottom:1.5rem; right:1.5rem;
+  background:var(--surface2);
+  border:1px solid var(--gold);
+  border-radius:8px;
+  padding:0.7rem 1.1rem;
+  font-family:'Cinzel', serif;
+  font-size:0.7rem;
+  color:var(--gold);
+  letter-spacing:0.08em;
+  z-index:9999;
+  box-shadow:0 8px 24px rgba(0,0,0,0.5);
+  animation:notifIn 0.3s ease;
+  max-width:280px; line-height:1.5;
+}
+@keyframes notifIn { from{transform:translateX(110%);opacity:0;} to{transform:none;opacity:1;} }
+
+@media(max-width:900px){
+  #app {
+    grid-template-columns:220px 1fr;
+    grid-template-areas:"header header" "sidebar reader";
+  }
+  #vault { display:none; }
+}
+@media(max-width:600px){
+  #app {
+    grid-template-columns:1fr;
+    grid-template-rows:auto auto 1fr;
+    grid-template-areas:"header" "sidebar" "reader";
+  }
+  #sidebar { max-height:160px; }
+  .books-list { display:flex; flex-wrap:wrap; gap:2px; padding:0.3rem; }
+  .book-btn { width:auto; font-size:0.75rem; padding:0.3rem 0.5rem; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ═══ HEADER ═══ -->
+  <header id="app-header">
+    <div class="header-brand">
+      <!-- 7 stars in circle with infinity -->
+      <div class="brand-stars" id="header-stars"></div>
+      <div>
+        <div class="brand-text">JecksOS · Bible</div>
+        <div class="brand-sub">New World Translation · JW.org</div>
+      </div>
+    </div>
+
+    <div class="nav-tabs">
+      <div class="nav-tab active" onclick="switchView('reader',this)">📖 Read</div>
+      <div class="nav-tab" onclick="switchView('vault',this)">🔐 My Vault</div>
+      <div class="nav-tab" onclick="switchView('admin',this)">⚙ Admin</div>
+    </div>
+
+    <div class="header-status">
+      <div class="status-dot"></div>
+      <span id="status-text">NWT Bible</span>
+    </div>
+  </header>
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside id="sidebar">
+    <div class="sidebar-head">
+      <span>Books</span>
+      <span style="font-size:0.55rem;color:var(--dim)">66 Books</span>
+    </div>
+    <div class="sidebar-search">
+      <input type="text" id="book-search"
+        placeholder="Search book..."
+        oninput="filterBooks(this.value)"/>
+    </div>
+    <div class="books-list" id="books-list"></div>
+  </aside>
+
+  <!-- ═══ READER ═══ -->
+  <main id="reader-area">
+    <!-- Chapter navigation bar -->
+    <div class="chapter-nav" id="chapter-nav" style="display:none">
+      <div class="chapter-nav-title" id="ch-nav-book">—</div>
+      <button class="ch-nav-arrow" onclick="prevChapter()">‹</button>
+      <div class="chapter-scroll" id="chapter-scroll"></div>
+      <button class="ch-nav-arrow" onclick="nextChapter()">›</button>
+    </div>
+
+    <!-- Welcome state -->
+    <div id="reader-welcome">
+      <div class="welcome-icon">✦</div>
+      <div class="welcome-title">New World Translation</div>
+      <div class="welcome-sub">
+        Select a book from the sidebar to begin reading.<br>
+        Tap any verse to save it to your personal vault,<br>
+        encoded in your binary numbering system.
+      </div>
+    </div>
+
+    <!-- Verses display -->
+    <div class="verses-wrap" id="verses-wrap" style="display:none"></div>
+
+    <!-- iFrame fallback (if NWT content is blocked) -->
+    <iframe id="iframe-reader" src=""
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+      title="NWT Bible Reader"></iframe>
+
+    <!-- Notice shown if iframe blocked -->
+    <div class="iframe-notice" id="iframe-notice">
+      <strong style="color:var(--gold)">📖 Tip:</strong>
+      JW.org has restricted embedding for this page.
+      <a href="https://www.jw.org/en/library/bible/study-bible/books/" target="_blank">
+        Open in new tab →
+      </a>
+      <br><br>
+      You can still paste verses into the <strong>Save Verse</strong> panel
+      on the right to store them in your vault.
+    </div>
+  </main>
+
+  <!-- ═══ VAULT ═══ -->
+  <aside id="vault">
+    <div class="vault-head">
+      <span>✦ My Vault</span>
+      <span id="vault-count" style="font-size:0.55rem;color:var(--dim)">0 saved</span>
+    </div>
+
+    <div class="vault-tabs">
+      <div class="vault-tab active" onclick="switchVaultTab('verses',this)">Verses</div>
+      <div class="vault-tab" onclick="switchVaultTab('binary',this)">Binary</div>
+    </div>
+
+    <!-- Verses tab -->
+    <div id="vault-verses" class="vault-content">
+      <div id="vault-verses-list">
+        <div style="padding:1.5rem;text-align:center;color:var(--dim);font-size:0.82rem;line-height:1.8">
+          No verses saved yet.<br>
+          Click any verse to save it here.
+        </div>
+      </div>
+    </div>
+
+    <!-- Binary tab -->
+    <div id="vault-binary" class="vault-content" style="display:none">
+      <div id="vault-binary-list">
+        <div style="padding:1.5rem;text-align:center;color:var(--dim);font-size:0.82rem;line-height:1.8">
+          Binary vault empty.<br>
+          Save verses to see them encoded.
+        </div>
+      </div>
+    </div>
+
+    <!-- Save panel -->
+    <div class="save-panel">
+      <div class="save-panel-title">✦ Save a Verse</div>
+      <textarea class="save-input" id="verse-input" rows="3"
+        placeholder="Paste or type a verse text here..."></textarea>
+      <input class="save-ref-input" id="ref-input"
+        placeholder="Reference e.g. John 3:16 (NWT)"/>
+      <button class="save-btn" onclick="saveVerse()">
+        ✦ Save to Vault
+      </button>
+      <div class="save-msg" id="save-msg"></div>
+    </div>
+  </aside>
+
+</div><!-- /app -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+// 7-STAR CIRCLE BUILDER
+// ═══════════════════════════════════════════════════════
+function buildStarCircle(containerId, r, starSize, infSize) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.style.position = 'relative';
+  el.style.width  = (r * 2 + starSize) + 'px';
+  el.style.height = (r * 2 + starSize) + 'px';
+  for (let i = 0; i < 7; i++) {
+    const angle = (i * 2 * Math.PI / 7) - Math.PI / 2;
+    const x = r + r * Math.cos(angle);
+    const y = r + r * Math.sin(angle);
+    const s = document.createElement('span');
+    s.className = 's';
+    s.textContent = '✦';
+    s.style.cssText = `
+      position:absolute;
+      font-size:${starSize}px;
+      color:#c8a84b;
+      filter:drop-shadow(0 0 4px rgba(200,168,75,0.7));
+      left:${x}px; top:${y}px;
+      transform:translate(-50%,-50%);
+    `;
+    el.appendChild(s);
+  }
+  const inf = document.createElement('span');
+  inf.className = 'inf';
+  inf.textContent = '∞';
+  inf.style.cssText = `
+    position:absolute;
+    left:50%; top:50%;
+    transform:translate(-50%,-50%);
+    font-size:${infSize}px;
+    font-style:italic;
+    color:#f0d07a;
+    filter:drop-shadow(0 0 8px rgba(200,168,75,0.8));
+    animation:pulseInf 3s ease-in-out infinite;
+  `;
+  el.appendChild(inf);
+}
+
+const style = document.createElement('style');
+style.textContent = `@keyframes pulseInf{0%,100%{opacity:1;filter:drop-shadow(0 0 8px rgba(200,168,75,0.8));}50%{opacity:0.7;filter:drop-shadow(0 0 18px rgba(200,168,75,1));}}`;
+document.head.appendChild(style);
+
+buildStarCircle('header-stars', 14, 8, 13);
+
+// ═══════════════════════════════════════════════════════
+// BIBLE DATA — NWT Books (all 66)
+// ═══════════════════════════════════════════════════════
+const OLD_TESTAMENT = [
+  { name:'Genesis',        abbr:'ge',  chapters:50 },
+  { name:'Exodus',         abbr:'ex',  chapters:40 },
+  { name:'Leviticus',      abbr:'le',  chapters:27 },
+  { name:'Numbers',        abbr:'nu',  chapters:36 },
+  { name:'Deuteronomy',    abbr:'de',  chapters:34 },
+  { name:'Joshua',         abbr:'jos', chapters:24 },
+  { name:'Judges',         abbr:'jg',  chapters:21 },
+  { name:'Ruth',           abbr:'ru',  chapters:4  },
+  { name:'1 Samuel',       abbr:'1sa', chapters:31 },
+  { name:'2 Samuel',       abbr:'2sa', chapters:24 },
+  { name:'1 Kings',        abbr:'1ki', chapters:22 },
+  { name:'2 Kings',        abbr:'2ki', chapters:25 },
+  { name:'1 Chronicles',   abbr:'1ch', chapters:29 },
+  { name:'2 Chronicles',   abbr:'2ch', chapters:36 },
+  { name:'Ezra',           abbr:'ezr', chapters:10 },
+  { name:'Nehemiah',       abbr:'ne',  chapters:13 },
+  { name:'Esther',         abbr:'es',  chapters:10 },
+  { name:'Job',            abbr:'job', chapters:42 },
+  { name:'Psalms',         abbr:'ps',  chapters:150},
+  { name:'Proverbs',       abbr:'pr',  chapters:31 },
+  { name:'Ecclesiastes',   abbr:'ec',  chapters:12 },
+  { name:'Song of Solomon',abbr:'ca',  chapters:8  },
+  { name:'Isaiah',         abbr:'isa', chapters:66 },
+  { name:'Jeremiah',       abbr:'jer', chapters:52 },
+  { name:'Lamentations',   abbr:'la',  chapters:5  },
+  { name:'Ezekiel',        abbr:'eze', chapters:48 },
+  { name:'Daniel',         abbr:'da',  chapters:12 },
+  { name:'Hosea',          abbr:'ho',  chapters:14 },
+  { name:'Joel',           abbr:'joe', chapters:3  },
+  { name:'Amos',           abbr:'am',  chapters:9  },
+  { name:'Obadiah',        abbr:'ob',  chapters:1  },
+  { name:'Jonah',          abbr:'jon', chapters:4  },
+  { name:'Micah',          abbr:'mic', chapters:7  },
+  { name:'Nahum',          abbr:'na',  chapters:3  },
+  { name:'Habakkuk',       abbr:'hab', chapters:3  },
+  { name:'Zephaniah',      abbr:'zep', chapters:3  },
+  { name:'Haggai',         abbr:'hag', chapters:2  },
+  { name:'Zechariah',      abbr:'zec', chapters:14 },
+  { name:'Malachi',        abbr:'mal', chapters:4  },
+];
+
+const NEW_TESTAMENT = [
+  { name:'Matthew',        abbr:'mt',  chapters:28 },
+  { name:'Mark',           abbr:'mr',  chapters:16 },
+  { name:'Luke',           abbr:'lu',  chapters:24 },
+  { name:'John',           abbr:'joh', chapters:21 },
+  { name:'Acts',           abbr:'ac',  chapters:28 },
+  { name:'Romans',         abbr:'ro',  chapters:16 },
+  { name:'1 Corinthians',  abbr:'1co', chapters:16 },
+  { name:'2 Corinthians',  abbr:'2co', chapters:13 },
+  { name:'Galatians',      abbr:'ga',  chapters:6  },
+  { name:'Ephesians',      abbr:'eph', chapters:6  },
+  { name:'Philippians',    abbr:'php', chapters:4  },
+  { name:'Colossians',     abbr:'col', chapters:4  },
+  { name:'1 Thessalonians',abbr:'1th', chapters:5  },
+  { name:'2 Thessalonians',abbr:'2th', chapters:3  },
+  { name:'1 Timothy',      abbr:'1ti', chapters:6  },
+  { name:'2 Timothy',      abbr:'2ti', chapters:4  },
+  { name:'Titus',          abbr:'tit', chapters:3  },
+  { name:'Philemon',       abbr:'phm', chapters:1  },
+  { name:'Hebrews',        abbr:'heb', chapters:13 },
+  { name:'James',          abbr:'jas', chapters:5  },
+  { name:'1 Peter',        abbr:'1pe', chapters:5  },
+  { name:'2 Peter',        abbr:'2pe', chapters:3  },
+  { name:'1 John',         abbr:'1jo', chapters:5  },
+  { name:'2 John',         abbr:'2jo', chapters:1  },
+  { name:'3 John',         abbr:'3jo', chapters:1  },
+  { name:'Jude',           abbr:'jude',chapters:1  },
+  { name:'Revelation',     abbr:'re',  chapters:22 },
+];
+
+const ALL_BOOKS = [...OLD_TESTAMENT, ...NEW_TESTAMENT];
+
+// ═══════════════════════════════════════════════════════
+// NWT VERSE DATA — Key verses loaded in-app
+// Extended set of NWT verses stored directly
+// ═══════════════════════════════════════════════════════
+const NWT_VERSES = {
+  'john-3':  [
+    "God loved the world so much that he gave his only-begotten Son, so that everyone exercising faith in him might not be destroyed but have everlasting life.",
+    "For God did not send his Son into the world for him to judge the world, but for the world to be saved through him.",
+    "Whoever exercises faith in him is not to be judged. Whoever does not exercise faith has been judged already, because he has not exercised faith in the name of the only-begotten Son of God.",
+    "Now this is the basis for judgment: that the light has come into the world, but men have loved the darkness rather than the light, for their works were wicked.",
+    "For whoever practices vile things hates the light and does not come to the light, so that his works may not be reproved.",
+    "But whoever does what is true comes to the light, so that his works may be made manifest as having been done in harmony with God.",
+    "After this Jesus and his disciples went into the land of Judea, and he spent some time with them there and was baptizing.",
+    "John was also baptizing in Ae′non near Sa′lim, because there was a great quantity of water there, and people kept coming and were being baptized.",
+    "For John had not yet been thrown into prison.",
+    "Now a dispute arose between the disciples of John and a certain Jew concerning purification.",
+    "So they came to John and said to him: 'Rabbi, the man who was with you across the Jordan, to whom you bore witness, see, this one is baptizing and all are going to him.'",
+    "In answer John said: 'A man cannot receive a single thing unless it has been given him from heaven.'",
+    "You yourselves bear me witness that I said, 'I am not the Christ, but I have been sent ahead of that one.'",
+    "He that has the bride is the bridegroom. But the friend of the bridegroom, who stands and hears him, has great joy on account of the voice of the bridegroom. So my joy has been made complete.",
+    "That one must keep increasing, but I must keep decreasing.",
+    "The one who comes from above is over all others. The one who is from the earth is from the earth and speaks of earthly things. The one who comes from heaven is over all others.",
+    "He bears witness to what he has seen and heard, but no man accepts his witness.",
+    "Whoever has accepted his witness has put his seal to it that God is true.",
+    "For the one whom God sent speaks the sayings of God, for He does not give the spirit sparingly.",
+    "The Father loves the Son and has given all things into his hand.",
+    "Whoever exercises faith in the Son has everlasting life; whoever disobeys the Son will not see life, but the wrath of God remains upon him.",
+  ],
+  'john-1': [
+    "In the beginning was the Word, and the Word was with God, and the Word was a god.",
+    "This one was in the beginning with God.",
+    "All things came into existence through him, and apart from him not even one thing came into existence.",
+    "What has come into existence by means of him was life, and the life was the light of men.",
+    "And the light is shining in the darkness, but the darkness has not overpowered it.",
+    "There came a man who was sent as a representative of God; his name was John.",
+    "This man came as a witness, in order to bear witness about the light, so that people of all sorts might believe through him.",
+    "He was not that light, but he was meant to bear witness about that light.",
+    "The true light that gives light to every sort of man was about to come into the world.",
+    "He was in the world, and the world came into existence through him, but the world did not know him.",
+    "He came to his own home, but his own people did not take him in.",
+    "However, to all who did receive him, he gave authority to become God's children, because they were exercising faith in his name.",
+    "And they were born, not from blood or from a fleshly will or from man's will, but from God.",
+    "So the Word became flesh and resided among us, and we had a view of his glory, a glory such as belongs to an only-begotten son from a father; and he was full of divine favor and truth.",
+  ],
+  'psalms-23': [
+    "Jehovah is my Shepherd. I will lack nothing.",
+    "In grassy pastures he makes me lie down; He leads me to well-watered resting-places.",
+    "He refreshes my soul. He leads me in the paths of righteousness for the sake of his name.",
+    "Though I walk in the valley of deep shadow, I fear no harm, for you are with me; your rod and your staff reassure me.",
+    "You prepare a table for me before my enemies. You refresh my head with oil; my cup is well-filled.",
+    "Surely goodness and loyal love will pursue me all the days of my life, and I will dwell in the house of Jehovah for all my days.",
+  ],
+  'proverbs-3': [
+    "My son, do not forget my teaching, and may your heart observe my commandments,",
+    "Because they will add many days and years of life and peace to you.",
+    "Do not let loyal love and faithfulness leave you. Tie them around your neck; write them on the tablet of your heart.",
+    "Then you will find favor and good insight in the eyes of God and man.",
+    "Trust in Jehovah with all your heart, and do not rely on your own understanding.",
+    "In all your ways take notice of him, and he will make your paths straight.",
+    "Do not become wise in your own eyes. Fear Jehovah and turn away from bad.",
+    "It will be a healing to your body and refreshment for your bones.",
+    "Honor Jehovah with your valuable things, with the firstfruits of all your produce.",
+    "Then your storehouses will be completely filled, and your vats will overflow with new wine.",
+  ],
+  'genesis-1': [
+    "In the beginning God created the heavens and the earth.",
+    "Now the earth was formless and desolate, and there was darkness upon the surface of the watery deep, and God's active force was moving about over the surface of the waters.",
+    "And God said: 'Let there be light.' Then there was light.",
+    "After that God saw that the light was good, and God began to divide the light from the darkness.",
+    "God called the light Day, but the darkness he called Night. And there was evening and there was morning, a first day.",
+    "Then God said: 'Let there be an expanse between the waters, and let there be a division between the waters and the waters.'",
+    "Then God made the expanse and divided the waters beneath the expanse from the waters above the expanse. And it was so.",
+    "God called the expanse Heaven. And there was evening and there was morning, a second day.",
+    "Then God said: 'Let the waters under the heavens be collected together into one place, and let the dry land appear.' And it was so.",
+    "God called the dry land Earth, but the collecting of the waters, he called Seas. And God saw that it was good.",
+    "Then God said: 'Let the earth cause grass to sprout, seed-bearing plants and fruit trees according to their kinds, yielding fruit along with seed, on the earth.' And it was so.",
+    "And the earth began to produce grass, seed-bearing plants and trees yielding fruit along with seed, according to their kinds. And God saw that it was good.",
+    "And there was evening and there was morning, a third day.",
+    "Then God said: 'Let there be luminaries in the expanse of the heavens to make a division between the day and the night, and they will serve as signs for seasons and for days and years.'",
+    "They will serve as luminaries in the expanse of the heavens to shine upon the earth. And it was so.",
+    "And God went on to make the two great luminaries, the greater luminary for dominating the day and the lesser luminary for dominating the night, and also the stars.",
+    "Thus God put them in the expanse of the heavens to shine upon the earth.",
+    "And to dominate the day and the night and to make a division between the light and the darkness. And God saw that it was good.",
+    "And there was evening and there was morning, a fourth day.",
+    "Then God said: 'Let the waters swarm with living creatures, and let flying creatures fly above the earth across the expanse of the heavens.'",
+    "And God created the great sea creatures and all living creatures that move and swarm in the waters according to their kinds and every winged flying creature according to its kind. And God saw that it was good.",
+    "With that God blessed them, saying: 'Be fruitful and become many and fill the waters of the sea, and let the flying creatures become many on the earth.'",
+    "And there was evening and there was morning, a fifth day.",
+    "Then God said: 'Let the earth bring forth living creatures according to their kinds, domestic animals and creeping animals and wild animals of the earth according to their kinds.' And it was so.",
+    "And God went on to make the wild animals of the earth according to their kinds and the domestic animals according to their kinds and all the creeping animals of the ground according to their kinds. And God saw that it was good.",
+    "Then God said: 'Let us make man in our image, according to our likeness, and let them have in subjection the fish of the sea and the flying creatures of the heavens and the domestic animals and all the earth and every creeping animal that is moving on the earth.'",
+    "And God went on to create the man in his image, in God's image he created him; male and female he created them.",
+    "Further, God blessed them, and God said to them: 'Be fruitful and become many, fill the earth and subdue it, and have in subjection the fish of the sea and the flying creatures of the heavens and every living creature that is moving on the earth.'",
+    "Then God said: 'Here I have given you every seed-bearing plant that is on the entire earth and every tree with seed-bearing fruit. Let them serve as food for you.'",
+    "And to every wild animal of the earth and to every flying creature of the heavens and to everything moving on the earth in which there is life, I have given all green vegetation for food. And it was so.",
+    "After that God saw everything he had made, and look! it was very good. And there was evening and there was morning, a sixth day.",
+  ],
+};
+
+// ═══════════════════════════════════════════════════════
+// DIVISIBILITY-7 BINARY ENCODER
+// primes → 0, non-primes → binary(n), starting at 7
+// ═══════════════════════════════════════════════════════
+function isPrime(n) {
+  if (n < 2) return false;
+  if (n === 2 || n === 3) return true;
+  if (n % 2 === 0 || n % 3 === 0) return false;
+  for (let i = 5; i * i <= n; i += 6) {
+    if (n % i === 0 || n % (i+2) === 0) return false;
+  }
+  return true;
+}
+
+function encodeChar(charCode) {
+  // Use character code as the number
+  if (isPrime(charCode)) return '0';
+  return charCode.toString(2);
+}
+
+function textToBinary7System(text) {
+  return text.split('').map(ch => {
+    const code = ch.charCodeAt(0);
+    const enc  = encodeChar(code);
+    const has7 = String(code).includes('7');
+    return (has7 ? '【' : '') + enc + (has7 ? '】' : '');
+  }).join(' ');
+}
+
+function decodeBinary7System(encoded) {
+  return encoded.split(' ').map(token => {
+    const clean = token.replace(/[【】]/g, '');
+    if (clean === '0') return '?'; // prime — cannot be decoded to single char
+    const n = parseInt(clean, 2);
+    return String.fromCharCode(n);
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let currentBook    = null;
+let currentChapter = 1;
+let savedVerses    = [];
+let vaultTab       = 'verses';
+let fbReady        = false;
+
+// ═══════════════════════════════════════════════════════
+// FIREBASE READY
+// ═══════════════════════════════════════════════════════
+document.addEventListener('fb-ready', () => {
+  fbReady = true;
+  document.getElementById('status-text').textContent =
+    window._fbUser ? 'Signed in · NWT' : 'NWT Bible · Guest';
+  loadVault();
+});
+
+// ═══════════════════════════════════════════════════════
+// BUILD SIDEBAR
+// ═══════════════════════════════════════════════════════
+function buildSidebar(filter = '') {
+  const list = document.getElementById('books-list');
+  list.innerHTML = '';
+  const f = filter.toLowerCase();
+
+  const addSection = (label, books) => {
+    const filtered = books.filter(b => b.name.toLowerCase().includes(f));
+    if (!filtered.length) return;
+    const lbl = document.createElement('div');
+    lbl.className = 'testament-label';
+    lbl.textContent = label;
+    list.appendChild(lbl);
+    filtered.forEach(book => {
+      const btn = document.createElement('button');
+      btn.className = 'book-btn' +
+        (currentBook?.name === book.name ? ' active' : '');
+      btn.textContent = book.name;
+      btn.onclick = () => openBook(book);
+      list.appendChild(btn);
+    });
+  };
+
+  addSection('Old Testament', OLD_TESTAMENT);
+  addSection('New Testament', NEW_TESTAMENT);
+}
+
+function filterBooks(val) { buildSidebar(val); }
+
+// ═══════════════════════════════════════════════════════
+// OPEN BOOK & CHAPTER
+// ═══════════════════════════════════════════════════════
+function openBook(book) {
+  currentBook    = book;
+  currentChapter = 1;
+  buildSidebar(document.getElementById('book-search').value);
+  buildChapterNav();
+  loadChapter();
+}
+
+function buildChapterNav() {
+  if (!currentBook) return;
+  const nav    = document.getElementById('chapter-nav');
+  const scroll = document.getElementById('chapter-scroll');
+  const title  = document.getElementById('ch-nav-book');
+  nav.style.display    = 'flex';
+  title.textContent    = currentBook.name;
+  scroll.innerHTML     = '';
+  for (let i = 1; i <= currentBook.chapters; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'ch-btn' + (i === currentChapter ? ' active' : '');
+    btn.textContent = i;
+    btn.onclick = () => { currentChapter = i; loadChapter(); buildChapterNav(); };
+    scroll.appendChild(btn);
+  }
+}
+
+function prevChapter() {
+  if (!currentBook || currentChapter <= 1) return;
+  currentChapter--;
+  buildChapterNav();
+  loadChapter();
+}
+function nextChapter() {
+  if (!currentBook || currentChapter >= currentBook.chapters) return;
+  currentChapter++;
+  buildChapterNav();
+  loadChapter();
+}
+
+function loadChapter() {
+  if (!currentBook) return;
+  const welcome = document.getElementById('reader-welcome');
+  const wrap    = document.getElementById('verses-wrap');
+  const iframe  = document.getElementById('iframe-reader');
+  const notice  = document.getElementById('iframe-notice');
+  welcome.style.display = 'none';
+  iframe.style.display  = 'none';
+  notice.style.display  = 'none';
+  wrap.style.display    = 'block';
+
+  const key = `${currentBook.abbr}-${currentChapter}`;
+  const verses = NWT_VERSES[key];
+
+  wrap.innerHTML = `
+    <div class="book-title-display">${currentBook.name}</div>
+    <div class="chapter-title-display">Chapter ${currentChapter}</div>`;
+
+  if (verses && verses.length) {
+    verses.forEach((text, i) => {
+      const row = document.createElement('div');
+      row.className = 'verse-row';
+      row.dataset.verse = i + 1;
+      row.dataset.text  = text;
+      row.innerHTML = `
+        <div class="verse-num">${i + 1}</div>
+        <div class="verse-text">${text}</div>
+        <button class="verse-save-btn" onclick="quickSaveVerse(event,${i+1},'${escJs(text)}')">
+          ✦ Save
+        </button>`;
+      wrap.appendChild(row);
+    });
+    document.getElementById('status-text').textContent =
+      `${currentBook.name} ${currentChapter} · ${verses.length} verses`;
+  } else {
+    // Try iframe for chapters not yet stored
+    wrap.innerHTML += `
+      <div style="color:var(--dim);font-size:0.85rem;line-height:1.8;margin-bottom:1rem">
+        This chapter is not yet stored locally.
+        Attempting to load from JW.org...
+      </div>`;
+    tryIframe(currentBook, currentChapter, wrap);
+  }
+}
+
+function tryIframe(book, chapter, wrap) {
+  const url = `https://www.jw.org/en/library/bible/study-bible/books/${book.name.toLowerCase().replace(/\s/g,'-')}/${chapter}/`;
+  const iframe = document.getElementById('iframe-reader');
+  iframe.src = url;
+  iframe.style.display = 'block';
+  wrap.style.display   = 'none';
+
+  // If iframe blocked after 3s, show notice
+  const t = setTimeout(() => {
+    iframe.style.display  = 'none';
+    wrap.style.display    = 'block';
+    document.getElementById('iframe-notice').style.display = 'block';
+    wrap.innerHTML += `<div style="margin-top:0.5rem">
+      <a href="${url}" target="_blank"
+        style="color:var(--gold);font-family:'Cinzel',serif;font-size:0.8rem;letter-spacing:0.08em">
+        → Open ${book.name} ${chapter} on JW.org
+      </a>
+    </div>`;
+    setStatus(`${book.name} ${chapter} · Open on JW.org`);
+  }, 3000);
+
+  iframe.onload = () => {
+    clearTimeout(t);
+    // Test if content loaded (CORS will block access but display works)
+    try {
+      const blocked = !iframe.contentDocument;
+      if (blocked) throw new Error('blocked');
+      iframe.style.display  = 'block';
+      wrap.style.display    = 'none';
+      setStatus(`${book.name} ${chapter} · JW.org Live`);
+    } catch(e) {
+      // iframe loaded but content is cross-origin — still show it
+      iframe.style.display = 'block';
+      wrap.style.display   = 'none';
+      setStatus(`${book.name} ${chapter} · JW.org`);
+    }
+  };
+}
+
+function setStatus(text) {
+  document.getElementById('status-text').textContent = text;
+}
+
+// ═══════════════════════════════════════════════════════
+// SAVE VERSE (quick from verse row)
+// ═══════════════════════════════════════════════════════
+function quickSaveVerse(e, verseNum, text) {
+  e.stopPropagation();
+  document.getElementById('verse-input').value = text;
+  document.getElementById('ref-input').value =
+    `${currentBook?.name || ''} ${currentChapter}:${verseNum} (NWT)`;
+  saveVerse();
+}
+
+async function saveVerse() {
+  const text = document.getElementById('verse-input').value.trim();
+  const ref  = document.getElementById('ref-input').value.trim();
+  const msg  = document.getElementById('save-msg');
+
+  if (!text) {
+    msg.textContent = 'Enter a verse first.';
+    msg.className = 'save-msg err'; return;
+  }
+
+  // Encode using Divisibility-7 binary system
+  const encoded = textToBinary7System(text);
+  const refEnc  = textToBinary7System(ref);
+
+  const entry = {
+    ref, text, encoded, refEncoded: refEnc,
+    book:    currentBook?.name || 'Manual',
+    chapter: currentChapter,
+    savedAt: new Date().toISOString()
+  };
+
+  // Save to Firestore if logged in
+  if (fbReady && window._fbUser) {
+    try {
+      const { db, collection, addDoc, serverTimestamp } = window._fb;
+      await addDoc(collection(db, 'users', window._fbUser.uid, 'verses'), {
+        ...entry,
+        timestamp: serverTimestamp()
+      });
+      msg.textContent = '✦ Saved to Firebase vault!';
+    } catch(e) {
+      msg.textContent = 'Saved locally (Firebase: ' + e.message + ')';
+    }
+  } else {
+    msg.textContent = '✦ Saved locally (sign in to sync)';
+  }
+  msg.className = 'save-msg ok';
+
+  savedVerses.unshift(entry);
+  renderVault();
+  document.getElementById('verse-input').value = '';
+  document.getElementById('ref-input').value   = '';
+  setTimeout(() => { msg.textContent = ''; }, 3000);
+  pushNotif('✦ Verse saved to vault');
+}
+
+// ═══════════════════════════════════════════════════════
+// LOAD VAULT FROM FIRESTORE
+// ═══════════════════════════════════════════════════════
+async function loadVault() {
+  if (!fbReady || !window._fbUser) return;
+  try {
+    const { db, collection, query, orderBy, getDocs } = window._fb;
+    const q    = query(
+      collection(db, 'users', window._fbUser.uid, 'verses'),
+      orderBy('timestamp', 'desc')
+    );
+    const snap = await getDocs(q);
+    savedVerses = [];
+    snap.forEach(d => savedVerses.push({ id: d.id, ...d.data() }));
+    renderVault();
+  } catch(e) { /* silent */ }
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER VAULT
+// ═══════════════════════════════════════════════════════
+function renderVault() {
+  const count = savedVerses.length;
+  document.getElementById('vault-count').textContent = count + ' saved';
+
+  // Verses tab
+  document.getElementById('vault-verses-list').innerHTML = count
+    ? savedVerses.map((v,i) => `
+        <div class="saved-verse">
+          <div class="saved-verse-ref">
+            <span>${v.ref || 'No reference'}</span>
+            <button class="saved-verse-del" onclick="deleteVerse(${i},'${v.id||''}')">✕</button>
+          </div>
+          <div class="saved-verse-text">${v.text}</div>
+        </div>`).join('')
+    : `<div style="padding:1.5rem;text-align:center;color:var(--dim);font-size:0.82rem;line-height:1.8">
+        No verses saved yet.
+      </div>`;
+
+  // Binary tab
+  document.getElementById('vault-binary-list').innerHTML = count
+    ? savedVerses.map((v,i) => `
+        <div class="binary-view">
+          <div class="binary-ref">${v.ref || 'No reference'}</div>
+          <div class="binary-text" id="bin-${i}"
+               title="Click to expand"
+               onclick="this.classList.toggle('expanded')">${v.encoded}</div>
+        </div>`).join('')
+    : `<div style="padding:1.5rem;text-align:center;color:var(--dim);font-size:0.82rem;line-height:1.8">
+        Binary vault empty.
+      </div>`;
+}
+
+async function deleteVerse(idx, firestoreId) {
+  savedVerses.splice(idx, 1);
+  if (fbReady && window._fbUser && firestoreId) {
+    try {
+      const { db, doc, deleteDoc } = window._fb;
+      await deleteDoc(doc(db, 'users', window._fbUser.uid, 'verses', firestoreId));
+    } catch(e) { /* silent */ }
+  }
+  renderVault();
+}
+
+// ═══════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════
+function switchView(view, el) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const vault = document.getElementById('vault');
+  if (view === 'vault') {
+    vault.style.display = 'flex';
+    switchVaultTab('verses', null);
+  } else if (view === 'admin') {
+    // Admin sees binary vault only
+    vault.style.display = 'flex';
+    switchVaultTab('binary', null);
+  } else {
+    vault.style.display = window.innerWidth > 900 ? 'flex' : 'none';
+  }
+}
+
+function switchVaultTab(tab, el) {
+  vaultTab = tab;
+  document.querySelectorAll('.vault-tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  else {
+    document.querySelectorAll('.vault-tab').forEach((t,i) => {
+      t.classList.toggle('active', (i===0&&tab==='verses')||(i===1&&tab==='binary'));
+    });
+  }
+  document.getElementById('vault-verses').style.display = tab==='verses'?'block':'none';
+  document.getElementById('vault-binary').style.display = tab==='binary'?'block':'none';
+}
+
+function pushNotif(text) {
+  const n = document.createElement('div');
+  n.className = 'notif';
+  n.textContent = text;
+  document.body.appendChild(n);
+  setTimeout(() => {
+    n.style.opacity = '0';
+    n.style.transform = 'translateX(110%)';
+    n.style.transition = 'all 0.4s';
+    setTimeout(() => n.remove(), 400);
+  }, 3000);
+}
+
+function escJs(s) {
+  return String(s).replace(/'/g,"\\'").replace(/\n/g,' ');
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+buildStarCircle('header-stars', 14, 8, 13);
+buildSidebar();
+</script>
+</body>
+</html>
